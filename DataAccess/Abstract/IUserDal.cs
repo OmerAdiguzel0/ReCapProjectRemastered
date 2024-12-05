@@ -7,10 +7,11 @@ namespace DataAccess.Abstract
     public interface IUserDal : IEntityRepository<User>
     {
         List<OperationClaim> GetClaims(User user);
-        List<OperationClaim> GetOperationClaims();
         void AddOperationClaim(OperationClaim operationClaim);
+        void DeleteOperationClaim(OperationClaim operationClaim);
+        void UpdateOperationClaim(OperationClaim operationClaim);
         void AddUserOperationClaim(UserOperationClaim userOperationClaim);
-        void DeleteUserOperationClaims(int userId);
-        void DeleteOperationClaim(OperationClaim operationClaim); // Yeni eklenen metod
+        void UpdateUserOperationClaim(int userId, int roleId);
+        List<OperationClaim> GetOperationClaims();
     }
 }

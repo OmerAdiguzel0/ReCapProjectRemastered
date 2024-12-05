@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 using Core.DataAccess.EntityFramework;
 using DataAccess.Abstract;
 using Entities.Concrete;
@@ -30,7 +27,12 @@ namespace DataAccess.Concrete.EntityFramework
                         ColorName = co.ColorName,
                         DailyPrice = c.DailyPrice,
                         ModelYear = c.ModelYear,
-                        Description = c.Description
+                        Description = c.Description,
+                        MinFindeksScore = c.MinFindeksScore,
+                        ImagePaths = context.CarImages
+                            .Where(ci => ci.CarId == c.CarId)
+                            .Select(ci => ci.ImagePath ?? "")
+                            .ToList()
                     };
                 return result.ToList();
             }

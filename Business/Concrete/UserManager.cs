@@ -136,15 +136,8 @@ namespace Business.Concrete
                 if (operationClaim == null)
                     return new ErrorResult("Rol bulunamadı");
 
-                // Mevcut rolleri temizle
-                _userDal.DeleteUserOperationClaims(userId);
-
-                // Yeni rolü ekle
-                _userDal.AddUserOperationClaim(new UserOperationClaim
-                {
-                    UserId = userId,
-                    OperationClaimId = roleId
-                });
+                // Yeni metodu kullanarak rolü güncelle
+                _userDal.UpdateUserOperationClaim(userId, roleId);
 
                 return new SuccessResult("Kullanıcı rolü güncellendi");
             }
@@ -154,7 +147,6 @@ namespace Business.Concrete
             }
         }
 
-        // Yeni eklenen metodların implementasyonu
         public IDataResult<List<OperationClaim>> GetAllRoles()
         {
             try
@@ -208,6 +200,36 @@ namespace Business.Concrete
             catch (Exception ex)
             {
                 return new ErrorResult($"Rol silinirken hata oluştu: {ex.Message}");
+            }
+        }
+
+        public IResult UpdateRole(int roleId, string roleName)
+        {
+            try
+            {
+                var role = _userDal.GetOperationClaims().FirstOrDefault(r => r.Id == roleId);
+                if (role == null)
+                {
+                    return new ErrorResult("Rol bulunamadı");
+                }
+
+                if (role.Name == "admin" || role.Name == "user")
+                {
+                    return new ErrorResult("Varsayılan roller güncellenemez");
+                }
+
+                if (_userDal.GetOperationClaims().Any(r => r.Name == roleName && r.Id != roleId))
+                {
+                    return new ErrorResult("Bu rol adı zaten kullanılıyor");
+                }
+
+                role.Name = roleName;
+                _userDal.UpdateOperationClaim(role);
+                return new SuccessResult("Rol başarıyla güncellendi");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Rol güncellenirken hata oluştu: {ex.Message}");
             }
         }
     }

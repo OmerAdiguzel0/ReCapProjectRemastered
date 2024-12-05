@@ -18,14 +18,11 @@ namespace Business.Concrete
     public class BrandManager:IBrandService
     {
         private IBrandDal _brandDal;
-        IColorService _colorService;
 
-        public BrandManager(IBrandDal brandDal, IColorService colorService)
+        public BrandManager(IBrandDal brandDal)
         {
             _brandDal = brandDal;
-            _colorService = colorService;
         }
-
 
         public IDataResult<List<Brand>> GetAll()
         {
@@ -40,53 +37,52 @@ namespace Business.Concrete
         [ValidationAspect(typeof(BrandValidator))]
         public IResult Add(Brand brand)
         {
-            IResult result = BusinessRules.Run(ChecIfBrandNameExists(brand.BrandName), CheckIfColorLimitExceded());
+            IResult result = BusinessRules.Run(CheckIfBrandNameExists(brand.BrandName));
             if (result != null)
             {
                 return result;
             }
 
             _brandDal.Add(brand);
-            return new SuccessResult();
+            return new SuccessResult(Messages.BrandAdded);
         }
 
         public IResult Delete(Brand brand)
         {
             _brandDal.Delete(brand);
-            return new SuccessResult();
+            return new SuccessResult(Messages.BrandDeleted);
         }
 
         [ValidationAspect(typeof(BrandValidator))]
         public IResult Update(Brand brand)
         {
-            IResult result = BusinessRules.Run(ChecIfBrandNameExists(brand.BrandName), CheckIfColorLimitExceded());
-            if (result !=null)
+            var existingBrand = _brandDal.Get(b => b.BrandId == brand.BrandId);
+            if (existingBrand == null)
             {
-                return result;
+                return new ErrorResult(Messages.BrandNotFound);
+            }
+
+            if (existingBrand.BrandName != brand.BrandName)
+            {
+                IResult result = BusinessRules.Run(CheckIfBrandNameExists(brand.BrandName));
+                if (result != null)
+                {
+                    return result;
+                }
             }
 
             _brandDal.Update(brand);
-            return new SuccessResult();
+            return new SuccessResult(Messages.BrandUpdated);
         }
 
-        private IResult ChecIfBrandNameExists(string brandName)
+        private IResult CheckIfBrandNameExists(string brandName)
         {
-            var result = _brandDal.GetAll(b=>b.BrandName== brandName).Any();
+            var result = _brandDal.GetAll(b => b.BrandName == brandName).Any();
             if (result)
             {
                 return new ErrorResult(Messages.BrandNameAlreadyExists);
             }
 
-            return new SuccessResult();
-        }
-
-        private IResult CheckIfColorLimitExceded()
-        {
-            var result = _colorService.GetAll();
-            if (result.Data.Count>15)
-            {
-                return new ErrorResult(Messages.ColorLimitExceded);
-            }
             return new SuccessResult();
         }
     }

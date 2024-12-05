@@ -21,7 +21,16 @@ namespace Business.Constants
         public static string CouldNotCarAdded = "Araç Eklenemedi!";
         public static string CarCountOfBrandError="Bir Markadan En Fazla 10 Araç Eklenebilir!";
         public static string BrandNameAlreadyExists="Marka İsmi Veritabanına Zaten Kayıtlı!";
+        public static string BrandAdded = "Marka Başarıyla Eklendi!";
+        public static string BrandDeleted = "Marka Başarıyla Silindi!";
+        public static string BrandUpdated = "Marka Başarıyla Güncellendi!";
+        public static string BrandNotFound = "Marka Bulunamadı!";
         public static string ColorLimitExceded="Renk Limiti Aşıldı!";
+        public static string ColorNameAlreadyExists = "Renk İsmi Veritabanına Zaten Kayıtlı!";
+        public static string ColorAdded = "Renk Başarıyla Eklendi!";
+        public static string ColorDeleted = "Renk Başarıyla Silindi!";
+        public static string ColorUpdated = "Renk Başarıyla Güncellendi!";
+        public static string ColorNotFound = "Renk Bulunamadı!";
         public static string ImageUploaded="Resim Yüklendi!";
         public static string DeletedImage="Resim Silindi!";
         public static string UpdatedImage="Resim Güncellendi!";

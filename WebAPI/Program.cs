@@ -16,7 +16,6 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 
 // Add CORS with more detailed configuration
@@ -53,6 +52,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = SecurityKeyHelper.CreateSecurityKey(tokenOptions.SecurityKey)
         };
     });
+
 builder.Services.AddDependencyResolvers(new ICoreModule[]
 {
     new CoreModule()
@@ -74,16 +74,22 @@ if (app.Environment.IsDevelopment())
 // Use CORS before auth middleware
 app.UseCors("AllowOrigin");
 
-// Enable serving static files
+// Ensure wwwroot/Uploads/Images directory exists
+var uploadsPath = Path.Combine(app.Environment.WebRootPath, "Uploads", "Images");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+// Enable serving static files and set default files
 app.UseStaticFiles();
 
-// Add default files configuration
-var defaultFilesOptions = new DefaultFilesOptions();
-defaultFilesOptions.DefaultFileNames.Add("index.html");
-app.UseDefaultFiles(defaultFilesOptions);
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    DefaultFileNames = new List<string> { "index.html" }
+});
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
 app.MapControllers();

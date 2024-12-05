@@ -70,6 +70,23 @@ namespace WebAPI.Controllers
             return BadRequest(new { success = false, message = result.Message });
         }
 
+        [HttpPut("roles/{roleId}")]
+        [Authorize(Roles = "admin")]
+        public IActionResult UpdateRole(int roleId, [FromBody] RoleRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return BadRequest(new { success = false, message = "Rol adı boş olamaz" });
+            }
+
+            var result = _userService.UpdateRole(roleId, request.Name);
+            if (result.Success)
+            {
+                return Ok(new { success = true, message = result.Message });
+            }
+            return BadRequest(new { success = false, message = result.Message });
+        }
+
         [HttpDelete("roles/{roleId}")]
         [Authorize(Roles = "admin")]
         public IActionResult DeleteRole(int roleId)
