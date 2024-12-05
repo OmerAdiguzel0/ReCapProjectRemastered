@@ -1,9 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Core.Utilities.Helpers.FileHelper
 {
@@ -11,39 +6,97 @@ namespace Core.Utilities.Helpers.FileHelper
     {
         public void Delete(string filePath)
         {
-            if (File.Exists(filePath))
+            try
             {
-                File.Delete(filePath);
+                if (string.IsNullOrEmpty(filePath))
+                {
+                    throw new ArgumentException("Dosya yolu boş olamaz.");
+                }
+
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Dosya silinirken hata oluştu: {ex.Message}");
             }
         }
 
         public string Update(IFormFile file, string filePath, string root)
         {
-            if (File.Exists(filePath))
+            try
             {
-                File.Delete(filePath);
+                if (file == null)
+                {
+                    throw new ArgumentNullException(nameof(file), "Dosya boş olamaz.");
+                }
+
+                if (string.IsNullOrEmpty(filePath))
+                {
+                    throw new ArgumentException("Dosya yolu boş olamaz.");
+                }
+
+                if (string.IsNullOrEmpty(root))
+                {
+                    throw new ArgumentException("Kök dizin yolu boş olamaz.");
+                }
+
+                Delete(filePath);
+                return Upload(file, root);
             }
-            return Upload(file,root);
+            catch (Exception ex)
+            {
+                throw new Exception($"Dosya güncellenirken hata oluştu: {ex.Message}");
+            }
         }
 
         public string Upload(IFormFile file, string root)
         {
-            if (file!=null)
+            try
             {
+                if (file == null || file.Length == 0)
+                {
+                    throw new ArgumentException("Dosya seçilmedi veya boş.");
+                }
+
+                if (string.IsNullOrEmpty(root))
+                {
+                    throw new ArgumentException("Kök dizin yolu boş olamaz.");
+                }
+
                 if (!Directory.Exists(root))
                 {
                     Directory.CreateDirectory(root);
                 }
-                string imageExtension = Path.GetExtension(file.FileName);
-                string imageName=Guid.NewGuid().ToString() + imageExtension;
-                using (FileStream fileStream = File.Create(root + imageName))
+
+                string fileExtension = Path.GetExtension(file.FileName).ToLower();
+                if (!IsValidFileExtension(fileExtension))
                 {
-                    file.CopyTo(fileStream);
-                    fileStream.Flush();
-                    return imageName;
+                    throw new ArgumentException("Geçersiz dosya uzantısı. Sadece resim dosyaları (.jpg, .jpeg, .png, .gif) yüklenebilir.");
                 }
+
+                string fileName = Guid.NewGuid().ToString() + fileExtension;
+                string filePath = Path.Combine(root, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    file.CopyTo(stream);
+                }
+
+                return fileName;
             }
-            return null;
+            catch (Exception ex)
+            {
+                throw new Exception($"Dosya yüklenirken hata oluştu: {ex.Message}");
+            }
+        }
+
+        private bool IsValidFileExtension(string extension)
+        {
+            string[] allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif" };
+            return allowedExtensions.Contains(extension.ToLower());
         }
     }
 }

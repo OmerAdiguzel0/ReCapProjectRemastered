@@ -47,44 +47,52 @@ namespace DataAccess.Concrete.EntityFramework
 
             // İlişkiler
             modelBuilder.Entity<Car>()
-                .HasOne<Brand>()
+                .HasOne(c => c.Brand)
                 .WithMany()
-                .HasForeignKey(c => c.BrandId);
+                .HasForeignKey(c => c.BrandId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Car>()
-                .HasOne<Color>()
+                .HasOne(c => c.Color)
                 .WithMany()
-                .HasForeignKey(c => c.ColorId);
+                .HasForeignKey(c => c.ColorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Car>()
+                .HasMany(c => c.CarImages)
+                .WithOne()
+                .HasForeignKey(ci => ci.CarId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Customer>()
                 .HasOne<User>()
                 .WithMany()
-                .HasForeignKey(c => c.UserId);
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Rental>()
                 .HasOne<Car>()
                 .WithMany()
-                .HasForeignKey(r => r.CarId);
+                .HasForeignKey(r => r.CarId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Rental>()
                 .HasOne<Customer>()
                 .WithMany()
-                .HasForeignKey(r => r.CustomerId);
-
-            modelBuilder.Entity<CarImage>()
-                .HasOne<Car>()
-                .WithMany()
-                .HasForeignKey(ci => ci.CarId);
+                .HasForeignKey(r => r.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<UserOperationClaim>()
                 .HasOne<User>()
                 .WithMany()
-                .HasForeignKey(uoc => uoc.UserId);
+                .HasForeignKey(uoc => uoc.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<UserOperationClaim>()
                 .HasOne<OperationClaim>()
                 .WithMany()
-                .HasForeignKey(uoc => uoc.OperationClaimId);
+                .HasForeignKey(uoc => uoc.OperationClaimId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

@@ -21,20 +21,32 @@ namespace DataAccess.Concrete.EntityFramework
             }
         }
 
-        public List<OperationClaim> GetOperationClaims()
-        {
-            using (var context = new RentACarContext())
-            {
-                return context.OperationClaims.ToList();
-            }
-        }
-
         public void AddOperationClaim(OperationClaim operationClaim)
         {
             using (var context = new RentACarContext())
             {
                 var addedEntity = context.Entry(operationClaim);
                 addedEntity.State = Microsoft.EntityFrameworkCore.EntityState.Added;
+                context.SaveChanges();
+            }
+        }
+
+        public void DeleteOperationClaim(OperationClaim operationClaim)
+        {
+            using (var context = new RentACarContext())
+            {
+                var deletedEntity = context.Entry(operationClaim);
+                deletedEntity.State = Microsoft.EntityFrameworkCore.EntityState.Deleted;
+                context.SaveChanges();
+            }
+        }
+
+        public void UpdateOperationClaim(OperationClaim operationClaim)
+        {
+            using (var context = new RentACarContext())
+            {
+                var updatedEntity = context.Entry(operationClaim);
+                updatedEntity.State = Microsoft.EntityFrameworkCore.EntityState.Modified;
                 context.SaveChanges();
             }
         }
@@ -49,29 +61,42 @@ namespace DataAccess.Concrete.EntityFramework
             }
         }
 
-        public void DeleteUserOperationClaims(int userId)
+        public void UpdateUserOperationClaim(int userId, int roleId)
         {
             using (var context = new RentACarContext())
             {
-                var claims = context.UserOperationClaims.Where(u => u.UserId == userId);
-                context.UserOperationClaims.RemoveRange(claims);
+                // Önce kullanıcının mevcut rolünü bul
+                var existingClaim = context.UserOperationClaims
+                    .FirstOrDefault(uoc => uoc.UserId == userId);
+
+                if (existingClaim != null)
+                {
+                    // Mevcut rolü güncelle
+                    existingClaim.OperationClaimId = roleId;
+                    var updatedEntity = context.Entry(existingClaim);
+                    updatedEntity.State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+                }
+                else
+                {
+                    // Yeni rol ata
+                    var newClaim = new UserOperationClaim
+                    {
+                        UserId = userId,
+                        OperationClaimId = roleId
+                    };
+                    var addedEntity = context.Entry(newClaim);
+                    addedEntity.State = Microsoft.EntityFrameworkCore.EntityState.Added;
+                }
+
                 context.SaveChanges();
             }
         }
 
-        public void DeleteOperationClaim(OperationClaim operationClaim)
+        public List<OperationClaim> GetOperationClaims()
         {
             using (var context = new RentACarContext())
             {
-                // Önce bu role sahip tüm kullanıcıların rol bağlantılarını sil
-                var userClaims = context.UserOperationClaims
-                    .Where(uc => uc.OperationClaimId == operationClaim.Id);
-                context.UserOperationClaims.RemoveRange(userClaims);
-
-                // Sonra rolü sil
-                var entity = context.Entry(operationClaim);
-                entity.State = Microsoft.EntityFrameworkCore.EntityState.Deleted;
-                context.SaveChanges();
+                return context.OperationClaims.ToList();
             }
         }
     }

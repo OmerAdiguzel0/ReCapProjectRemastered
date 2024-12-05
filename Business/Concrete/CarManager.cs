@@ -63,21 +63,28 @@ namespace Business.Concrete
         [CacheRemoveAspect("ICarService.Get")]
         public IResult Add(Car car)
         {
-            IResult result = BusinessRules.Run(CheckInCarCountOfBrandCorrect(car.BrandId));
-            if (result != null)
+            try 
             {
-                return result;
-            }
+                IResult result = BusinessRules.Run(CheckInCarCountOfBrandCorrect(car.BrandId));
+                if (result != null)
+                {
+                    return result;
+                }
 
-            _carDal.Add(car);
-            return new SuccessResult();
+                _carDal.Add(car);
+                return new SuccessResult(Messages.CarAdded);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(Messages.CouldNotCarAdded + " " + ex.Message);
+            }
         }
 
         [CacheRemoveAspect("ICarService.Get")]
         public IResult Delete(Car car)
         {
             _carDal.Delete(car);
-            return new SuccessResult();
+            return new SuccessResult(Messages.CarDeleted);
         }
 
         [CacheRemoveAspect("ICarService.Get")]
@@ -91,13 +98,13 @@ namespace Business.Concrete
             }
 
             _carDal.Update(car);
-            return new SuccessResult();
+            return new SuccessResult(Messages.CarUpdated);
         }
 
         private IResult CheckInCarCountOfBrandCorrect(int brandId)
         {
             var result = _carDal.GetAll(c=>c.BrandId == brandId).Count;
-            if (result>=15)
+            if (result >= 10)
             {
                 return new ErrorResult(Messages.CarCountOfBrandError);
             }

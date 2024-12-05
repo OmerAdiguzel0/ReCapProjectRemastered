@@ -15,9 +15,10 @@ namespace Business.Abstract
         IResult UpdateUserRole(int userId, int roleId);
         IResult AddDefaultRole(User user);
         
-        // Yeni eklenen metodlar
+        // Rol yönetimi metodları
         IDataResult<List<OperationClaim>> GetAllRoles();
         IResult AddRole(string roleName);
         IResult DeleteRole(int roleId);
+        IResult UpdateRole(int roleId, string roleName);
     }
 }
