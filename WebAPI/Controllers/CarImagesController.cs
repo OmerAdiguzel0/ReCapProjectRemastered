@@ -18,37 +18,28 @@ namespace WebAPI.Controllers
             _webHostEnvironment = webHostEnvironment;
         }
 
-        [HttpGet("getall")]
-        public IActionResult GetAll()
-        {
-            var result = _carImageService.GetAll();
-            if (result.Success)
-            {
-                return Ok(result);
-            }
-            return BadRequest(result);
-        }
-        
         [HttpGet("getbycarid")]
         public IActionResult GetByCarId(int carId)
         {
-            var result = _carImageService.GetByCarId(carId);
-            if (result.Success)
+            try
             {
-                return Ok(result);
+                if (carId <= 0)
+                {
+                    return BadRequest(new { success = false, message = "Geçersiz araba ID'si" });
+                }
+
+                var result = _carImageService.GetByCarId(carId);
+                if (result.Success)
+                {
+                    return Ok(new { success = true, data = result.Data });
+                }
+
+                return BadRequest(new { success = false, message = result.Message });
             }
-            return BadRequest(result);
-        }
-        
-        [HttpGet("getbyimageid")]
-        public IActionResult GetByImageId(int imageId)
-        {
-            var result = _carImageService.GetByCarId(imageId);
-            if (result.Success)
+            catch (Exception ex)
             {
-                return Ok(result);
+                return BadRequest(new { success = false, message = $"Bir hata oluştu: {ex.Message}" });
             }
-            return BadRequest(result);
         }
 
         [HttpPost("add")]
@@ -61,19 +52,13 @@ namespace WebAPI.Controllers
                     return BadRequest(new { success = false, message = "Dosya seçilmedi" });
                 }
 
-                var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "Uploads", "Images");
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(uploadsFolder);
-                }
-
                 var result = _carImageService.Add(formFile, carImage);
                 if (result.Success)
                 {
-                    return Ok(result);
+                    return Ok(new { success = true, data = carImage, message = result.Message });
                 }
 
-                return BadRequest(result);
+                return BadRequest(new { success = false, message = result.Message });
             }
             catch (Exception ex)
             {
@@ -81,52 +66,24 @@ namespace WebAPI.Controllers
             }
         }
 
-        [HttpPost("delete")]
-        public IActionResult Delete([FromBody] CarImage carImage)
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
         {
             try
             {
+                var carImage = _carImageService.GetByImageId(id).Data;
                 if (carImage == null)
                 {
-                    return BadRequest(new { success = false, message = "Geçersiz resim bilgisi" });
+                    return BadRequest(new { success = false, message = "Resim bulunamadı" });
                 }
 
                 var result = _carImageService.Delete(carImage);
                 if (result.Success)
                 {
-                    return Ok(result);
+                    return Ok(new { success = true, message = result.Message });
                 }
 
-                return BadRequest(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { success = false, message = $"Bir hata oluştu: {ex.Message}" });
-            }
-        }
-
-        [HttpPost("update")]
-        public IActionResult Update([FromForm] IFormFile formFile, [FromForm] CarImage carImage)
-        {
-            try
-            {
-                if (formFile == null)
-                {
-                    return BadRequest(new { success = false, message = "Dosya seçilmedi" });
-                }
-
-                if (carImage == null)
-                {
-                    return BadRequest(new { success = false, message = "Geçersiz resim bilgisi" });
-                }
-
-                var result = _carImageService.Update(formFile, carImage);
-                if (result.Success)
-                {
-                    return Ok(result);
-                }
-
-                return BadRequest(result);
+                return BadRequest(new { success = false, message = result.Message });
             }
             catch (Exception ex)
             {

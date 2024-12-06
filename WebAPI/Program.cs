@@ -73,17 +73,29 @@ if (app.Environment.IsDevelopment())
 // Use CORS before auth middleware
 app.UseCors("AllowOrigin");
 
-// wwwroot klasörünün varlığını kontrol et ve oluştur
-if (!Directory.Exists(app.Environment.WebRootPath))
+// wwwroot ve uploads klasörlerini oluştur
+var webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+if (!Directory.Exists(webRootPath))
 {
-    Directory.CreateDirectory(app.Environment.WebRootPath);
+    Directory.CreateDirectory(webRootPath);
 }
 
-// Uploads/Images klasörünün varlığını kontrol et ve oluştur
-var uploadsPath = Path.Combine(app.Environment.WebRootPath, "Uploads", "Images");
+var uploadsPath = Path.Combine(webRootPath, "Uploads", "Images");
 if (!Directory.Exists(uploadsPath))
 {
     Directory.CreateDirectory(uploadsPath);
+}
+
+// Default resmi kopyala (eğer yoksa)
+var defaultImagePath = Path.Combine(uploadsPath, "default.jpg");
+if (!System.IO.File.Exists(defaultImagePath))
+{
+    // Projenizde var olan default resmi buraya kopyalayın
+    var sourceDefaultImage = Path.Combine(Directory.GetCurrentDirectory(), "default.jpg");
+    if (System.IO.File.Exists(sourceDefaultImage))
+    {
+        System.IO.File.Copy(sourceDefaultImage, defaultImagePath);
+    }
 }
 
 // Statik dosyaların sunulmasını etkinleştir
