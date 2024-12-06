@@ -36,21 +36,21 @@ namespace Business.Concrete
                     return result;
                 }
 
-                string uploadedFileName = _fileHelper.Upload(formFile, PathConstants.ImagesPath);
-                if (string.IsNullOrEmpty(uploadedFileName))
+                string fileName = _fileHelper.Upload(formFile, PathConstants.ImagesPath);
+                if (string.IsNullOrEmpty(fileName))
                 {
                     return new ErrorResult("Dosya yüklenemedi");
                 }
 
-                carImage.ImagePath = uploadedFileName;
-                carImage.Date = DateTime.UtcNow;
+                carImage.ImagePath = fileName;
+                carImage.Date = DateTime.Now;
                 _carImageDal.Add(carImage);
 
                 return new SuccessResult(Messages.ImageUploaded);
             }
             catch (Exception ex)
             {
-                return new ErrorResult($"Hata oluştu: {ex.Message}");
+                return new ErrorResult($"Resim yükleme hatası: {ex.Message}");
             }
         }
 
@@ -58,13 +58,28 @@ namespace Business.Concrete
         {
             try
             {
-                if (carImage == null || string.IsNullOrEmpty(carImage.ImagePath))
+                if (carImage == null)
                 {
                     return new ErrorResult("Geçersiz resim bilgisi");
                 }
 
-                string fullPath = Path.Combine(PathConstants.ImagesPath, carImage.ImagePath);
-                _fileHelper.Delete(fullPath);
+                // Eğer resim default resim ise silmeye çalışma
+                if (carImage.ImagePath != null && carImage.ImagePath.Contains("default.jpg"))
+                {
+                    _carImageDal.Delete(carImage);
+                    return new SuccessResult(Messages.DeletedImage);
+                }
+
+                // Resim yolu boş değilse ve dosya varsa sil
+                if (!string.IsNullOrEmpty(carImage.ImagePath))
+                {
+                    string fullPath = Path.Combine(PathConstants.ImagesPath, carImage.ImagePath);
+                    if (System.IO.File.Exists(fullPath))
+                    {
+                        _fileHelper.Delete(fullPath);
+                    }
+                }
+
                 _carImageDal.Delete(carImage);
                 return new SuccessResult(Messages.DeletedImage);
             }
@@ -86,13 +101,12 @@ namespace Business.Concrete
                 var result = _carImageDal.GetAll(c => c.CarId == carId);
                 if (!result.Any())
                 {
-                    // Eğer araba için resim yoksa, default resmi döndür
                     return new SuccessDataResult<List<CarImage>>(new List<CarImage>
                     {
                         new CarImage
                         {
                             CarId = carId,
-                            ImagePath = "/Uploads/Images/default.jpg",
+                            ImagePath = "default.jpg",
                             Date = DateTime.Now
                         }
                     });
@@ -101,7 +115,7 @@ namespace Business.Concrete
                 // Resimleri API URL'sine göre düzenle
                 foreach (var image in result)
                 {
-                    if (image.ImagePath != null)
+                    if (!string.IsNullOrEmpty(image.ImagePath))
                     {
                         image.ImagePath = $"/Uploads/Images/{image.ImagePath}";
                     }

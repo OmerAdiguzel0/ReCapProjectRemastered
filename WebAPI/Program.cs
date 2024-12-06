@@ -12,20 +12,21 @@ using DataAccess.Abstract;
 using DataAccess.Concrete.EntityFramework;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
 
-// Add CORS with more detailed configuration
+// CORS ayarlarını güncelle
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowOrigin",
         builder => builder
             .WithOrigins("http://localhost:3000")
-            .AllowAnyHeader()
             .AllowAnyMethod()
+            .AllowAnyHeader()
             .AllowCredentials());
 });
 
@@ -50,6 +51,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = SecurityKeyHelper.CreateSecurityKey(tokenOptions.SecurityKey)
         };
+        // WebSocket bağlantıları için
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddDependencyResolvers(new ICoreModule[]
@@ -63,55 +77,28 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// wwwroot klasörünü oluştur
+var webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+Directory.CreateDirectory(webRootPath);
 
-// Use CORS before auth middleware
+// Uploads/Images klasörünü oluştur
+var uploadsPath = Path.Combine(webRootPath, "Uploads", "Images");
+Directory.CreateDirectory(uploadsPath);
+
+// CORS'u en başa al
 app.UseCors("AllowOrigin");
 
-// wwwroot ve uploads klasörlerini oluştur
-var webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-if (!Directory.Exists(webRootPath))
+// Statik dosya servisini etkinleştir
+app.UseStaticFiles(new StaticFileOptions
 {
-    Directory.CreateDirectory(webRootPath);
-}
-
-var uploadsPath = Path.Combine(webRootPath, "Uploads", "Images");
-if (!Directory.Exists(uploadsPath))
-{
-    Directory.CreateDirectory(uploadsPath);
-}
-
-// Default resmi kopyala (eğer yoksa)
-var defaultImagePath = Path.Combine(uploadsPath, "default.jpg");
-if (!System.IO.File.Exists(defaultImagePath))
-{
-    // Projenizde var olan default resmi buraya kopyalayın
-    var sourceDefaultImage = Path.Combine(Directory.GetCurrentDirectory(), "default.jpg");
-    if (System.IO.File.Exists(sourceDefaultImage))
-    {
-        System.IO.File.Copy(sourceDefaultImage, defaultImagePath);
-    }
-}
-
-// Statik dosyaların sunulmasını etkinleştir
-app.UseStaticFiles();
-
-app.UseDefaultFiles(new DefaultFilesOptions
-{
-    DefaultFileNames = new List<string> { "index.html" }
+    FileProvider = new PhysicalFileProvider(webRootPath),
+    RequestPath = ""
 });
 
+// Diğer middleware'ler
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-// Add a fallback route for SPA
-app.MapFallbackToFile("index.html");
 
 app.Run("http://localhost:7108");

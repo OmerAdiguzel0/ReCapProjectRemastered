@@ -77,15 +77,34 @@ namespace WebAPI.Controllers
 
         [HttpPost]
         [Authorize(Roles = "admin")]
-        public IActionResult Add(Car car)
+        public IActionResult Add([FromBody] Car car)
         {
-            var result = _carService.Add(car);
-            if (result.Success)
+            try
             {
-                return Ok(new { success = true, data = car, message = result.Message });
-            }
+                var result = _carService.Add(car);
+                if (result.Success)
+                {
+                    return Ok(new { 
+                        success = true, 
+                        message = result.Message,
+                        data = new { 
+                            carId = car.CarId,
+                            brandId = car.BrandId,
+                            colorId = car.ColorId,
+                            modelYear = car.ModelYear,
+                            dailyPrice = car.DailyPrice,
+                            description = car.Description,
+                            minFindeksScore = car.MinFindeksScore
+                        }
+                    });
+                }
 
-            return BadRequest(new { success = false, message = result.Message });
+                return BadRequest(new { success = false, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Araba eklenirken bir hata oluştu: {ex.Message}" });
+            }
         }
         
         [HttpDelete("{id}")]
