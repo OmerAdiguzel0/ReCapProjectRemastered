@@ -37,5 +37,26 @@ namespace DataAccess.Concrete.EntityFramework
                 return result.ToList();
             }
         }
+
+        public override void Add(Car entity)
+        {
+            try
+            {
+                using (var context = new RentACarContext())
+                {
+                    var addedEntity = context.Entry(entity);
+                    addedEntity.State = EntityState.Added;
+                    context.SaveChanges();
+                }
+            }
+            catch (DbUpdateException dbEx)
+            {
+                throw new Exception($"Veritabanı güncelleme hatası: {dbEx.InnerException?.Message ?? dbEx.Message}");
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Araba eklenirken bir hata oluştu: {ex.Message}");
+            }
+        }
     }
 }

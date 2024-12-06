@@ -1,7 +1,7 @@
 ﻿namespace Business.Constants
 {
-    public class PathConstants
+    public static class PathConstants
     {
-        public static string ImagesPath = "wwwroot/Uploads/Images";
+        public static string ImagesPath = Path.Combine("wwwroot", "Uploads", "Images");
     }
 }

@@ -12,24 +12,28 @@ namespace Business.ValidationRules.FluentValidation
     {
         public CarValidator()
         {
-            RuleFor(c => c.DailyPrice).NotEmpty();
-            RuleFor(c => c.BrandId).NotEmpty();
-            RuleFor(c => c.ColorId).NotEmpty();
-            RuleFor(c => c.DailyPrice).GreaterThan(0);
-            RuleFor(c => c.Description).NotEmpty();
-            RuleFor(c => c.Description).MinimumLength(2);
-            RuleFor(c => c.ModelYear).NotEmpty();
-            RuleFor(c => c.MinFindeksScore).NotEmpty();
-            RuleFor(c => c.MinFindeksScore).GreaterThanOrEqualTo(0);
-            RuleFor(c => c.MinFindeksScore).LessThanOrEqualTo(1500);
-            //RuleFor(c => c.ModelYear).LessThanOrEqualTo(DateTime.Now.Year).WithMessage("Arabanın Model Yılı İçinde Bulunduğumuz Yıldan Küçük Olmalıdır!");
-            //RuleFor(c => c.DailyPrice).GreaterThanOrEqualTo(200).When(c => c.ModelYear == 2023);
-            //RuleFor(c => c.Description).Must(StartWithA).WithMessage("Araba Açıklaması A Harfi İle Başlamalı");
-        }
+            RuleFor(c => c.BrandId)
+                .NotEmpty().WithMessage("Marka seçimi zorunludur")
+                .GreaterThan(0).WithMessage("Geçerli bir marka seçmelisiniz");
 
-        private bool StartWithA(string arg)
-        {
-            return arg.StartsWith("A");           
+            RuleFor(c => c.ColorId)
+                .NotEmpty().WithMessage("Renk seçimi zorunludur")
+                .GreaterThan(0).WithMessage("Geçerli bir renk seçmelisiniz");
+
+            RuleFor(c => c.ModelYear)
+                .NotEmpty().WithMessage("Model yılı zorunludur")
+                .GreaterThan(0).WithMessage("Geçerli bir model yılı giriniz");
+
+            RuleFor(c => c.DailyPrice)
+                .NotEmpty().WithMessage("Günlük fiyat zorunludur")
+                .GreaterThan(0).WithMessage("Günlük fiyat 0'dan büyük olmalıdır");
+
+            RuleFor(c => c.Description)
+                .NotEmpty().WithMessage("Açıklama zorunludur")
+                .MinimumLength(2).WithMessage("Açıklama en az 2 karakter olmalıdır");
+
+            RuleFor(c => c.MinFindeksScore)
+                .InclusiveBetween(0, 1500).WithMessage("Findeks puanı 0-1500 arasında olmalıdır");
         }
     }
 }

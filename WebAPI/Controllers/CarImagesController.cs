@@ -43,7 +43,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("add")]
-        public IActionResult Add([FromForm(Name = "ImagePath")] IFormFile formFile, [FromForm] CarImage carImage)
+        public IActionResult Add([FromForm(Name = "ImagePath")] IFormFile formFile, [FromForm] int carId)
         {
             try
             {
@@ -52,10 +52,20 @@ namespace WebAPI.Controllers
                     return BadRequest(new { success = false, message = "Dosya seçilmedi" });
                 }
 
+                var carImage = new CarImage
+                {
+                    CarId = carId,
+                    Date = DateTime.Now
+                };
+
                 var result = _carImageService.Add(formFile, carImage);
                 if (result.Success)
                 {
-                    return Ok(new { success = true, data = carImage, message = result.Message });
+                    return Ok(new { 
+                        success = true, 
+                        message = result.Message,
+                        data = carImage 
+                    });
                 }
 
                 return BadRequest(new { success = false, message = result.Message });

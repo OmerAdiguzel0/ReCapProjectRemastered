@@ -71,12 +71,21 @@ namespace Business.Concrete
                     return result;
                 }
 
+                car.Brand = null;
+                car.Color = null;
+                car.CarImages = new List<CarImage>();
+
+                if (car.MinFindeksScore <= 0)
+                {
+                    car.MinFindeksScore = 500;
+                }
+
                 _carDal.Add(car);
                 return new SuccessResult(Messages.CarAdded);
             }
             catch (Exception ex)
             {
-                return new ErrorResult(Messages.CouldNotCarAdded + " " + ex.Message);
+                return new ErrorResult($"Araba eklenirken bir hata oluştu: {ex.InnerException?.Message ?? ex.Message}");
             }
         }
 
