@@ -81,31 +81,55 @@ namespace Business.Concrete
 
         public IDataResult<List<CarImage>> GetByCarId(int carId)
         {
-            var result = BusinessRules.Run(CheckCarImage(carId));
-            if (result != null)
+            try
             {
-                return new ErrorDataResult<List<CarImage>>(GetDefaultImage(carId).Data);
-            }
+                var result = _carImageDal.GetAll(c => c.CarId == carId);
+                if (!result.Any())
+                {
+                    // Eğer araba için resim yoksa, default resmi döndür
+                    return new SuccessDataResult<List<CarImage>>(new List<CarImage>
+                    {
+                        new CarImage
+                        {
+                            CarId = carId,
+                            ImagePath = "/Uploads/Images/default.jpg",
+                            Date = DateTime.Now
+                        }
+                    });
+                }
 
-            var images = _carImageDal.GetAll(c => c.CarId == carId);
-            foreach (var image in images)
+                // Resimleri API URL'sine göre düzenle
+                foreach (var image in result)
+                {
+                    if (image.ImagePath != null)
+                    {
+                        image.ImagePath = $"/Uploads/Images/{image.ImagePath}";
+                    }
+                }
+
+                return new SuccessDataResult<List<CarImage>>(result);
+            }
+            catch (Exception ex)
             {
-                // API'nin base URL'sine göre resim yolunu güncelle
-                image.ImagePath = $"/Uploads/Images/{image.ImagePath}";
+                return new ErrorDataResult<List<CarImage>>(ex.Message);
             }
-
-            return new SuccessDataResult<List<CarImage>>(images);
         }
 
-        public IDataResult<CarImage> GetByImageId(int carImageId)
+        public IDataResult<CarImage> GetByImageId(int imageId)
         {
-            var image = _carImageDal.Get(c => c.CarId == carImageId);
-            if (image != null)
+            try
             {
-                // API'nin base URL'sine göre resim yolunu güncelle
-                image.ImagePath = $"/Uploads/Images/{image.ImagePath}";
+                var result = _carImageDal.Get(c => c.CarImageId == imageId);
+                if (result == null)
+                {
+                    return new ErrorDataResult<CarImage>("Resim bulunamadı");
+                }
+                return new SuccessDataResult<CarImage>(result);
             }
-            return new SuccessDataResult<CarImage>(image);
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<CarImage>(ex.Message);
+            }
         }
 
         public IResult Update(IFormFile formFile, CarImage carImage)
