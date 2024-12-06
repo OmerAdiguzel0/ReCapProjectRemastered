@@ -23,8 +23,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowOrigin",
         builder => builder
-            .WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:3002", 
-                        "http://localhost:3003", "http://localhost:3006","http://localhost:59659")
+            .WithOrigins("http://localhost:3000")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
@@ -74,14 +73,20 @@ if (app.Environment.IsDevelopment())
 // Use CORS before auth middleware
 app.UseCors("AllowOrigin");
 
-// Ensure wwwroot/Uploads/Images directory exists
+// wwwroot klasörünün varlığını kontrol et ve oluştur
+if (!Directory.Exists(app.Environment.WebRootPath))
+{
+    Directory.CreateDirectory(app.Environment.WebRootPath);
+}
+
+// Uploads/Images klasörünün varlığını kontrol et ve oluştur
 var uploadsPath = Path.Combine(app.Environment.WebRootPath, "Uploads", "Images");
 if (!Directory.Exists(uploadsPath))
 {
     Directory.CreateDirectory(uploadsPath);
 }
 
-// Enable serving static files and set default files
+// Statik dosyaların sunulmasını etkinleştir
 app.UseStaticFiles();
 
 app.UseDefaultFiles(new DefaultFilesOptions
