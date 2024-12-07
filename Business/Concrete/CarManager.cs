@@ -125,14 +125,66 @@ namespace Business.Concrete
         [ValidationAspect(typeof(CarValidator))]
         public IResult Update(Car car)
         {
-            IResult result = BusinessRules.Run(CheckInCarCountOfBrandCorrect(car.BrandId));
-            if (result != null)
+            try
             {
-                return result;
-            }
+                _logger.LogInformation("Car Update Started: {@CarData}", new { 
+                    car.CarId,
+                    car.BrandId, 
+                    car.ColorId, 
+                    car.ModelYear,
+                    car.DailyPrice,
+                    car.Description,
+                    car.MinFindeksScore
+                });
 
-            _carDal.Update(car);
-            return new SuccessResult(Messages.CarUpdated);
+                // Validation
+                var validator = new CarValidator();
+                var validationResult = validator.Validate(car);
+                if (!validationResult.IsValid)
+                {
+                    _logger.LogWarning("Validation failed: {@ValidationErrors}", 
+                        validationResult.Errors.Select(e => e.ErrorMessage));
+                    return new ErrorResult(validationResult.Errors.First().ErrorMessage);
+                }
+
+                // Arabanın var olup olmadığını kontrol et
+                var existingCar = _carDal.Get(c => c.CarId == car.CarId);
+                if (existingCar == null)
+                {
+                    _logger.LogWarning("Car not found: {CarId}", car.CarId);
+                    return new ErrorResult("Güncellenecek araç bulunamadı");
+                }
+
+                // Navigation property'leri temizle
+                car.Brand = null;
+                car.Color = null;
+
+                _carDal.Update(car);
+                
+                _logger.LogInformation("Car successfully updated: {@Car}", new {
+                    car.CarId,
+                    car.BrandId,
+                    car.ColorId,
+                    car.ModelYear,
+                    car.DailyPrice,
+                    car.Description,
+                    car.MinFindeksScore
+                });
+
+                return new SuccessResult(Messages.CarUpdated);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating car: {@CarData}", new { 
+                    car?.CarId,
+                    car?.BrandId, 
+                    car?.ColorId, 
+                    car?.ModelYear,
+                    car?.DailyPrice,
+                    car?.Description
+                });
+                return new ErrorResult($"Araç güncellenirken bir hata oluştu: {ex.Message}");
+            }
         }
 
         private IResult CheckInCarCountOfBrandCorrect(int brandId)

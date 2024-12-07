@@ -14,6 +14,9 @@ using Core.Utilities.Interceptors;
 using Business.CCS;
 using Core.Utilities.Helpers.FileHelper;
 using Core.Utilities.Security.JWT;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
+using ILogger = Business.CCS.ILogger;
 
 namespace Business.DependencyResolvers.Autofac
 {
@@ -54,6 +57,17 @@ namespace Business.DependencyResolvers.Autofac
             builder.RegisterType<EfUserDal>().As<IUserDal>().SingleInstance();
             builder.RegisterType<AuthManager>().As<IAuthService>().SingleInstance();
             builder.RegisterType<JwtHelper>().As<ITokenHelper>().SingleInstance();
+
+            // Logger registration
+            builder.Register(c => LoggerFactory.Create(builder => 
+            {
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddConsole();
+            })).As<ILoggerFactory>().SingleInstance();
+
+            builder.RegisterGeneric(typeof(Logger<>))
+                .As(typeof(ILogger<>))
+                .InstancePerDependency();
 
             var assembly = System.Reflection.Assembly.GetExecutingAssembly();
 

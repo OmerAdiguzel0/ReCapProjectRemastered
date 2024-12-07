@@ -193,14 +193,48 @@ namespace WebAPI.Controllers
         [Authorize(Roles = "admin")]
         public IActionResult Update(int id, Car car)
         {
-            car.CarId = id;
-            var result = _carService.Update(car);
-            if (result.Success)
+            try
             {
-                return Ok(new { success = true, data = car, message = result.Message });
-            }
+                _logger.LogInformation("Car Update Request: {@CarData}", car);
 
-            return BadRequest(new { success = false, message = result.Message });
+                if (id != car.CarId)
+                {
+                    return BadRequest(new { success = false, message = "URL'deki ID ile gönderilen ID eşleşmiyor" });
+                }
+
+                var result = _carService.Update(car);
+                if (result.Success)
+                {
+                    // Döngüsel referansı önlemek için sadece gerekli alanları döndür
+                    var response = new
+                    {
+                        success = true,
+                        message = result.Message,
+                        data = new
+                        {
+                            car.CarId,
+                            car.BrandId,
+                            car.ColorId,
+                            car.ModelYear,
+                            car.DailyPrice,
+                            car.Description,
+                            car.MinFindeksScore
+                        }
+                    };
+                    return Ok(response);
+                }
+
+                return BadRequest(new { success = false, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating car: {CarId}", id);
+                return StatusCode(500, new { 
+                    success = false, 
+                    message = "Araç güncellenirken bir hata oluştu",
+                    error = ex.Message 
+                });
+            }
         }
     }
 }
