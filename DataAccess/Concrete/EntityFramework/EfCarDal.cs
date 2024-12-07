@@ -7,11 +7,19 @@ using Entities.Concrete;
 using Entities.DTOs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DataAccess.Concrete.EntityFramework
 {
     public class EfCarDal : EfEntityRepositoryBase<Car, RentACarContext>, ICarDal
     {
+        private readonly ILogger<EfCarDal> _logger;
+
+        public EfCarDal(ILogger<EfCarDal> logger = null)
+        {
+            _logger = logger ?? NullLogger<EfCarDal>.Instance;
+        }
+
         public List<CarDetailDto> GetCarDetail()
         {
             using (RentACarContext context = new RentACarContext())
@@ -140,6 +148,77 @@ namespace DataAccess.Concrete.EntityFramework
                 finally
                 {
                     transaction?.Dispose();
+                }
+            }
+        }
+
+        public override void Update(Car entity)
+        {
+            using (var context = new RentACarContext())
+            {
+                using var transaction = context.Database.BeginTransaction();
+                try
+                {
+                    _logger.LogInformation("Updating car: {@Car}", entity);
+
+                    // Mevcut arabayı ve resimlerini getir
+                    var existingCar = context.Cars
+                        .Include(c => c.CarImages)
+                        .AsNoTracking()  // Entity tracking'i devre dışı bırak
+                        .FirstOrDefault(c => c.CarId == entity.CarId);
+
+                    if (existingCar == null)
+                    {
+                        throw new Exception($"CarId: {entity.CarId} olan araç bulunamadı");
+                    }
+
+                    // Mevcut resimleri sakla
+                    var existingImages = existingCar.CarImages.ToList();
+
+                    // Yeni entity'yi attach et
+                    var entry = context.Entry(entity);
+                    entry.State = EntityState.Modified;
+
+                    // Navigation property'leri güncelleme
+                    entity.Brand = null;
+                    entity.Color = null;
+                    entity.CarImages = existingImages;
+
+                    // Değişiklikleri kaydet
+                    context.SaveChanges();
+
+                    // Transaction'ı commit et
+                    transaction.Commit();
+
+                    _logger.LogInformation("Car updated successfully: {@UpdatedCar}", new
+                    {
+                        entity.CarId,
+                        entity.BrandId,
+                        entity.ColorId,
+                        entity.ModelYear,
+                        entity.DailyPrice,
+                        entity.Description,
+                        entity.MinFindeksScore,
+                        ImageCount = entity.CarImages?.Count ?? 0
+                    });
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    _logger.LogError(ex, "Concurrency error while updating car: {CarId}", entity.CarId);
+                    transaction.Rollback();
+                    throw new Exception("Güncelleme sırasında çakışma oluştu. Lütfen tekrar deneyin.", ex);
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Database error while updating car: {CarId}", entity.CarId);
+                    transaction.Rollback();
+                    throw new Exception("Veritabanı güncelleme hatası oluştu.", ex);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error updating car: {CarId}", entity.CarId);
+                    transaction.Rollback();
+                    throw;
                 }
             }
         }
