@@ -19,16 +19,19 @@ using DataAccess.Abstract;
 using Entities.Concrete;
 using Entities.DTOs;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 
 namespace Business.Concrete
 {
     public class CarManager : ICarService
     {
         private ICarDal _carDal;
+        private readonly ILogger<CarManager> _logger;
 
-        public CarManager(ICarDal carDal)
+        public CarManager(ICarDal carDal, ILogger<CarManager> logger)
         {
             _carDal = carDal;
+            _logger = logger;
         }
 
         [CacheAspect]
@@ -63,65 +66,50 @@ namespace Business.Concrete
         [CacheRemoveAspect("ICarService.Get")]
         public IResult Add(Car car)
         {
-            try 
+            try
             {
-                Console.WriteLine("=== CarManager Add Method Started ===");
-                
-                if (car == null)
-                    return new ErrorResult("Araba bilgileri boş olamaz");
+                _logger.LogInformation("Car Add Started: {@CarData}", new { 
+                    car.BrandId, 
+                    car.ColorId, 
+                    car.ModelYear,
+                    car.DailyPrice,
+                    car.Description
+                });
 
-                Console.WriteLine($"Validations Started - BrandId: {car.BrandId}, ColorId: {car.ColorId}");
+                // Validation
+                var validator = new CarValidator();
+                var validationResult = validator.Validate(car);
+                if (!validationResult.IsValid)
+                {
+                    _logger.LogWarning("Validation failed: {@ValidationErrors}", 
+                        validationResult.Errors.Select(e => e.ErrorMessage));
+                    return new ErrorResult(validationResult.Errors.First().ErrorMessage);
+                }
 
-                if (car.BrandId <= 0)
-                    return new ErrorResult($"Geçersiz marka ID: {car.BrandId}");
-                    
-                if (car.ColorId <= 0)
-                    return new ErrorResult($"Geçersiz renk ID: {car.ColorId}");
-
-                if (string.IsNullOrWhiteSpace(car.Description))
-                    return new ErrorResult("Açıklama boş olamaz");
-
-                Console.WriteLine("Navigation properties cleaning...");
+                // Clear navigation properties
                 car.Brand = null;
                 car.Color = null;
-                car.CarImages ??= new List<CarImage>();
+                car.CarImages = new List<CarImage>();
 
-                Console.WriteLine("Business rules check started...");
-                IResult result = BusinessRules.Run(CheckInCarCountOfBrandCorrect(car.BrandId));
-                if (result != null)
+                // Set default values
+                if (car.MinFindeksScore <= 0)
                 {
-                    Console.WriteLine($"Business rule failed: {result.Message}");
-                    return result;
+                    car.MinFindeksScore = 500;
                 }
 
-                Console.WriteLine("Calling EfCarDal.Add...");
-                try
-                {
-                    _carDal.Add(car);
-                    Console.WriteLine("Car successfully added");
-                    return new SuccessResult(Messages.CarAdded);
-                }
-                catch (Exception innerEx)
-                {
-                    Console.WriteLine($"=== Error in EfCarDal.Add ===");
-                    Console.WriteLine($"Error Type: {innerEx.GetType().Name}");
-                    Console.WriteLine($"Error Message: {innerEx.Message}");
-                    if (innerEx.InnerException != null)
-                    {
-                        Console.WriteLine($"Inner Exception: {innerEx.InnerException.Message}");
-                    }
-                    return new ErrorResult("Araba eklenirken bir hata oluştu");
-                }
+                _carDal.Add(car);
+                _logger.LogInformation("Car successfully added with ID: {CarId}", car.CarId);
+                return new SuccessResult(Messages.CarAdded);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"=== CarManager Add Method Error ===");
-                Console.WriteLine($"Error Type: {ex.GetType().Name}");
-                Console.WriteLine($"Error Message: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                }
+                _logger.LogError(ex, "Error adding car: {@CarData}", new { 
+                    car?.BrandId, 
+                    car?.ColorId, 
+                    car?.ModelYear,
+                    car?.DailyPrice,
+                    car?.Description
+                });
                 return new ErrorResult($"Araba eklenirken bir hata oluştu: {ex.Message}");
             }
         }
@@ -149,10 +137,13 @@ namespace Business.Concrete
 
         private IResult CheckInCarCountOfBrandCorrect(int brandId)
         {
-            var result = _carDal.GetAll(c=>c.BrandId == brandId).Count;
-            if (result >= 10)
+            const int MAX_CARS_PER_BRAND = 20;
+
+            var result = _carDal.GetAll(c => c.BrandId == brandId).Count;
+            if (result >= MAX_CARS_PER_BRAND)
             {
-                return new ErrorResult(Messages.CarCountOfBrandError);
+                _logger.LogWarning($"Brand {brandId} has reached maximum car limit of {MAX_CARS_PER_BRAND}");
+                return new ErrorResult($"Bir markaya en fazla {MAX_CARS_PER_BRAND} araç eklenebilir!");
             }
 
             return new SuccessResult();

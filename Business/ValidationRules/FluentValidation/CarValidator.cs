@@ -22,7 +22,8 @@ namespace Business.ValidationRules.FluentValidation
 
             RuleFor(c => c.ModelYear)
                 .NotEmpty().WithMessage("Model yılı zorunludur")
-                .GreaterThan(0).WithMessage("Geçerli bir model yılı giriniz");
+                .GreaterThan(1900).WithMessage("Geçerli bir model yılı giriniz")
+                .LessThanOrEqualTo(DateTime.Now.Year + 1).WithMessage("Gelecek yıldan daha ileri bir tarih giremezsiniz");
 
             RuleFor(c => c.DailyPrice)
                 .NotEmpty().WithMessage("Günlük fiyat zorunludur")
@@ -30,7 +31,8 @@ namespace Business.ValidationRules.FluentValidation
 
             RuleFor(c => c.Description)
                 .NotEmpty().WithMessage("Açıklama zorunludur")
-                .MinimumLength(2).WithMessage("Açıklama en az 2 karakter olmalıdır");
+                .MinimumLength(2).WithMessage("Açıklama en az 2 karakter olmalıdır")
+                .MaximumLength(500).WithMessage("Açıklama en fazla 500 karakter olabilir");
 
             RuleFor(c => c.MinFindeksScore)
                 .InclusiveBetween(0, 1500).WithMessage("Findeks puanı 0-1500 arasında olmalıdır");

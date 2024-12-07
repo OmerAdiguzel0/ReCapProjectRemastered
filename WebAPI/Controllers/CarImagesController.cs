@@ -2,6 +2,8 @@
 using Entities.Concrete;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace WebAPI.Controllers
 {
@@ -9,13 +11,13 @@ namespace WebAPI.Controllers
     [ApiController]
     public class CarImagesController : ControllerBase
     {
-        ICarImageService _carImageService;
-        private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly ICarImageService _carImageService;
+        private readonly ILogger<CarImagesController> _logger;
 
-        public CarImagesController(ICarImageService carImageService, IWebHostEnvironment webHostEnvironment)
+        public CarImagesController(ICarImageService carImageService, ILogger<CarImagesController> logger)
         {
             _carImageService = carImageService;
-            _webHostEnvironment = webHostEnvironment;
+            _logger = logger;
         }
 
         [HttpGet("getbycarid")]
@@ -47,34 +49,53 @@ namespace WebAPI.Controllers
         {
             try
             {
-                if (ImagePath == null)
+                _logger.LogInformation("=== CarImage Add Request Started ===");
+                _logger.LogInformation("Request Details: CarId={CarId}, FileName={FileName}, FileSize={FileSize}", 
+                    carId, ImagePath?.FileName, ImagePath?.Length);
+
+                if (ImagePath == null || ImagePath.Length == 0)
                 {
-                    return BadRequest(new { success = false, message = "Dosya seçilmedi" });
+                    _logger.LogWarning("No file uploaded or file is empty");
+                    return BadRequest(new { success = false, message = "Dosya seçilmedi veya boş" });
+                }
+
+                // Dosya uzantısı kontrolü
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                var extension = Path.GetExtension(ImagePath.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(extension))
+                {
+                    _logger.LogWarning("Invalid file extension: {Extension}", extension);
+                    return BadRequest(new { success = false, message = "Sadece .jpg, .jpeg ve .png dosyaları kabul edilir" });
                 }
 
                 // Dosya boyutu kontrolü (örn: 5MB)
                 if (ImagePath.Length > 5 * 1024 * 1024)
                 {
-                    return BadRequest(new { success = false, message = "Dosya boyutu çok büyük" });
+                    _logger.LogWarning("File too large: {Size}bytes", ImagePath.Length);
+                    return BadRequest(new { success = false, message = "Dosya boyutu 5MB'dan büyük olamaz" });
                 }
 
-                // Dosya tipi kontrolü
-                var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png" };
-                if (!allowedTypes.Contains(ImagePath.ContentType.ToLower()))
+                // CarImage nesnesini oluştur
+                var carImage = new CarImage
                 {
-                    return BadRequest(new { success = false, message = "Geçersiz dosya tipi" });
-                }
+                    CarId = carId,
+                    Date = DateTime.Now
+                };
 
-                var result = _carImageService.Add(ImagePath, carId);
+                var result = _carImageService.Add(ImagePath, carImage);
+                _logger.LogInformation("Service Response: {@Result}", result);
+
                 if (result.Success)
                 {
-                    return Ok(new { success = true, message = result.Message });
+                    return Ok(new { success = true, message = result.Message, data = carImage });
                 }
 
+                _logger.LogWarning("Service returned failure: {Message}", result.Message);
                 return BadRequest(new { success = false, message = result.Message });
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error uploading image for car {CarId}", carId);
                 return BadRequest(new { 
                     success = false, 
                     message = "Resim yükleme sırasında bir hata oluştu",

@@ -2,6 +2,8 @@
 using Entities.Concrete;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace WebAPI.Controllers
 {
@@ -9,10 +11,13 @@ namespace WebAPI.Controllers
     [ApiController]
     public class CarsController : ControllerBase
     {
-        ICarService _carService;
-        public CarsController(ICarService carService)
+        private readonly ICarService _carService;
+        private readonly ILogger<CarsController> _logger;
+
+        public CarsController(ICarService carService, ILogger<CarsController> logger)
         {
             _carService = carService;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -81,76 +86,87 @@ namespace WebAPI.Controllers
         {
             try
             {
-                Console.WriteLine("\n=== CarsController Add Method Started ===");
-                Console.WriteLine($"Gelen Car Verisi:");
-                Console.WriteLine($"BrandId: {car?.BrandId}");
-                Console.WriteLine($"ColorId: {car?.ColorId}");
-                Console.WriteLine($"ModelYear: {car?.ModelYear}");
-                Console.WriteLine($"DailyPrice: {car?.DailyPrice}");
-                Console.WriteLine($"Description: {car?.Description}");
-                Console.WriteLine($"MinFindeksScore: {car?.MinFindeksScore}");
-                Console.WriteLine($"CarId: {car?.CarId}");
+                _logger.LogInformation("\n===========================================");
+                _logger.LogInformation("Car Add Request Started at {Time}", DateTime.Now);
+                _logger.LogInformation("Request Details:");
+                _logger.LogInformation("User: {User}", User.Identity.Name);
+                _logger.LogInformation("Car Data: {@CarData}", new
+                {
+                    car?.BrandId,
+                    car?.ColorId,
+                    car?.ModelYear,
+                    car?.DailyPrice,
+                    car?.Description
+                });
 
+                // Request validation
+                if (car == null)
+                {
+                    _logger.LogWarning("Request body is null");
+                    return BadRequest(new { success = false, message = "Geçersiz istek: Araba bilgileri boş" });
+                }
+
+                // Log incoming data
+                _logger.LogInformation("Incoming Car Data: {@Car}", new 
+                { 
+                    car.BrandId, 
+                    car.ColorId, 
+                    car.ModelYear,
+                    car.DailyPrice,
+                    car.Description,
+                    car.MinFindeksScore
+                });
+
+                // Basic validation
+                if (car.BrandId <= 0 || car.ColorId <= 0)
+                {
+                    _logger.LogWarning("Invalid brand or color ID: Brand={BrandId}, Color={ColorId}", car.BrandId, car.ColorId);
+                    return BadRequest(new { success = false, message = "Geçersiz marka veya renk seçimi" });
+                }
+
+                if (car.DailyPrice <= 0)
+                {
+                    _logger.LogWarning("Invalid daily price: {Price}", car.DailyPrice);
+                    return BadRequest(new { success = false, message = "Günlük fiyat 0'dan büyük olmalıdır" });
+                }
+
+                // Call service
+                _logger.LogInformation("Calling CarService.Add");
                 var result = _carService.Add(car);
                 
-                Console.WriteLine("\n=== Add Result Details ===");
-                Console.WriteLine($"Success: {result?.Success}");
-                Console.WriteLine($"Message: {result?.Message}");
-                
+                // Log service result
+                _logger.LogInformation("Service Response: Success={Success}, Message={Message}", 
+                    result.Success, result.Message);
+
                 if (result.Success)
                 {
-                    Console.WriteLine("\n=== Creating Response ===");
-                    Console.WriteLine($"Car after Add:");
-                    Console.WriteLine($"CarId: {car?.CarId}");
-                    Console.WriteLine($"BrandId: {car?.BrandId}");
-                    Console.WriteLine($"ColorId: {car?.ColorId}");
-                    Console.WriteLine($"ModelYear: {car?.ModelYear}");
-                    Console.WriteLine($"DailyPrice: {car?.DailyPrice}");
-                    Console.WriteLine($"Description: {car?.Description}");
-                    Console.WriteLine($"MinFindeksScore: {car?.MinFindeksScore}");
-
-                    var response = new { 
-                        success = true, 
-                        message = result.Message,
-                        data = new {
-                            carId = car.CarId,
-                            brandId = car.BrandId,
-                            colorId = car.ColorId,
-                            modelYear = car.ModelYear,
-                            dailyPrice = car.DailyPrice,
-                            description = car.Description,
-                            minFindeksScore = car.MinFindeksScore
-                        }
-                    };
-
-                    Console.WriteLine("\n=== Response Object ===");
-                    Console.WriteLine($"Success: {response.success}");
-                    Console.WriteLine($"Message: {response.message}");
-                    Console.WriteLine($"Data.CarId: {response.data.carId}");
-                    Console.WriteLine($"Data.BrandId: {response.data.brandId}");
-                    Console.WriteLine($"Data.ColorId: {response.data.colorId}");
-
+                    var response = new { success = true, message = result.Message, data = car };
+                    _logger.LogInformation("Success Response: {@Response}", response);
                     return Ok(response);
                 }
 
-                Console.WriteLine("\n=== Returning BadRequest ===");
-                Console.WriteLine($"Error Message: {result.Message}");
+                _logger.LogWarning("Service returned failure: {Message}", result.Message);
                 return BadRequest(new { success = false, message = result.Message });
             }
             catch (Exception ex)
             {
-                Console.WriteLine("\n=== CarsController Error Details ===");
-                Console.WriteLine($"Error Type: {ex.GetType().Name}");
-                Console.WriteLine($"Error Message: {ex.Message}");
+                _logger.LogError("\n===========================================");
+                _logger.LogError("Error occurred at {Time}", DateTime.Now);
+                _logger.LogError("Error Type: {ErrorType}", ex.GetType().Name);
+                _logger.LogError("Error Message: {ErrorMessage}", ex.Message);
+                _logger.LogError("Stack Trace: {StackTrace}", ex.StackTrace);
                 if (ex.InnerException != null)
                 {
-                    Console.WriteLine($"Inner Exception Type: {ex.InnerException.GetType().Name}");
-                    Console.WriteLine($"Inner Exception Message: {ex.InnerException.Message}");
+                    _logger.LogError("Inner Exception: {InnerError}", ex.InnerException.Message);
                 }
-                Console.WriteLine("\nStack Trace:");
-                Console.WriteLine(ex.StackTrace);
+                _logger.LogError("===========================================\n");
 
-                return BadRequest(new { success = false, message = "Araba eklenirken bir hata oluştu" });
+                return StatusCode(500, new { success = false, message = "Araba eklenirken bir hata oluştu", error = ex.Message });
+            }
+            finally
+            {
+                _logger.LogInformation("Request completed at {Time}", DateTime.Now);
+                _logger.LogInformation("===========================================\n");
             }
         }
         
