@@ -35,7 +35,7 @@ namespace WebAPI.Controllers
             {
                 // Kullanıcı rollerini kontrol et
                 var claims = _userService.GetClaims(userToLogin.Data);
-                bool isAdmin = claims.Data.Any(c => c.Name == "admin");
+                var isAdmin = claims.Data.Any(c => c.Name.ToLower() == "admin");
 
                 var response = new
                 {
@@ -45,9 +45,12 @@ namespace WebAPI.Controllers
                     {
                         token = result.Data.Token,
                         expiration = result.Data.Expiration,
-                        email = userToLogin.Data.Email,
                         userId = userToLogin.Data.Id,
-                        isAdmin = isAdmin
+                        email = userToLogin.Data.Email,
+                        firstName = userToLogin.Data.FirstName,
+                        lastName = userToLogin.Data.LastName,
+                        isAdmin = isAdmin,
+                        claims = claims.Data.Select(c => new { c.Name, c.Id }).ToList()
                     }
                 };
                 return Ok(response);
