@@ -110,6 +110,8 @@ namespace DataAccess.Concrete.EntityFramework
             modelBuilder.Entity<Car>()
                 .Navigation(c => c.CarImages)
                 .UsePropertyAccessMode(PropertyAccessMode.Property);
+
+            // DateTime dönüşüm kodunu kaldırdık çünkü Program.cs'de global ayar var
         }
     }
 }
