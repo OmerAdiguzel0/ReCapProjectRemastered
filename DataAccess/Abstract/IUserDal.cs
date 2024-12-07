@@ -12,6 +12,7 @@ namespace DataAccess.Abstract
         void UpdateOperationClaim(OperationClaim operationClaim);
         void AddUserOperationClaim(UserOperationClaim userOperationClaim);
         void UpdateUserOperationClaim(int userId, int roleId);
+        void DeleteUserOperationClaims(int userId);
         List<OperationClaim> GetOperationClaims();
     }
 }

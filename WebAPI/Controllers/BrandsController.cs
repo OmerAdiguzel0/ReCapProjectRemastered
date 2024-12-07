@@ -49,16 +49,29 @@ namespace WebAPI.Controllers
             return BadRequest(result);
         }
         
-        [HttpPost("delete")]
-        public IActionResult Delete(Brand brand)
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
         {
-            var result = _brandService.Delete(brand);
-            if (result.Success)
+            try
             {
-                return Ok(result);
-            }
+                var brandToDelete = _brandService.GetById(id);
+                if (!brandToDelete.Success)
+                {
+                    return BadRequest(new { success = false, message = "Marka bulunamadı" });
+                }
 
-            return BadRequest(result);
+                var result = _brandService.Delete(brandToDelete.Data);
+                if (result.Success)
+                {
+                    return Ok(new { success = true, message = result.Message });
+                }
+
+                return BadRequest(new { success = false, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Silme işlemi sırasında hata oluştu: {ex.Message}" });
+            }
         }
         
         [HttpPost("update")]

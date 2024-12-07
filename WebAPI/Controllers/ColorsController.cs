@@ -51,17 +51,30 @@ namespace WebAPI.Controllers
             return BadRequest(result);
         }
         
-        [HttpPost("delete")]
-        public IActionResult Delete(Color color)
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
         {
-            var result = _colorService.Delete(color);
-            if (result.Success)
+            try
             {
-                return Ok(result);
-            }
+                var colorToDelete = _colorService.GetById(id);
+                if (!colorToDelete.Success)
+                {
+                    return BadRequest(new { success = false, message = "Renk bulunamadı" });
+                }
 
-            return BadRequest(result);
-        } 
+                var result = _colorService.Delete(colorToDelete.Data);
+                if (result.Success)
+                {
+                    return Ok(new { success = true, message = result.Message });
+                }
+
+                return BadRequest(new { success = false, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Silme işlemi sırasında hata oluştu: {ex.Message}" });
+            }
+        }
 
         [HttpPost("update")]
         public IActionResult Update(Color color)
