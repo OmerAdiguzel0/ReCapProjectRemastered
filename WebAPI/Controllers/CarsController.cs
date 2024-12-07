@@ -191,7 +191,7 @@ namespace WebAPI.Controllers
 
         [HttpPut("{id}")]
         [Authorize(Roles = "admin")]
-        public IActionResult Update(int id, Car car)
+        public IActionResult Update(int id, [FromBody] Car car)
         {
             try
             {
@@ -202,26 +202,20 @@ namespace WebAPI.Controllers
                     return BadRequest(new { success = false, message = "URL'deki ID ile gönderilen ID eşleşmiyor" });
                 }
 
+                // Validasyon kontrolü
+                if (string.IsNullOrEmpty(car.Description))
+                {
+                    return BadRequest(new { success = false, message = "Açıklama alanı boş olamaz" });
+                }
+
                 var result = _carService.Update(car);
                 if (result.Success)
                 {
-                    // Döngüsel referansı önlemek için sadece gerekli alanları döndür
-                    var response = new
-                    {
-                        success = true,
+                    return Ok(new { 
+                        success = true, 
                         message = result.Message,
-                        data = new
-                        {
-                            car.CarId,
-                            car.BrandId,
-                            car.ColorId,
-                            car.ModelYear,
-                            car.DailyPrice,
-                            car.Description,
-                            car.MinFindeksScore
-                        }
-                    };
-                    return Ok(response);
+                        data = car
+                    });
                 }
 
                 return BadRequest(new { success = false, message = result.Message });
