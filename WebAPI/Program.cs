@@ -13,6 +13,9 @@ using DataAccess.Concrete.EntityFramework;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.FileProviders;
+using Core.CrossCuttingConcerns.Caching;
+using Core.CrossCuttingConcerns.Caching.Microsoft;
+using Microsoft.Extensions.Caching.Memory;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,7 +30,8 @@ builder.Services.AddCors(options =>
             .WithOrigins("http://localhost:3000")
             .AllowAnyMethod()
             .AllowAnyHeader()
-            .AllowCredentials());
+            .AllowCredentials()
+            .WithExposedHeaders("Content-Disposition"));
 });
 
 builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
@@ -75,6 +79,9 @@ builder.Services.AddDependencyResolvers(new ICoreModule[]
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ICacheManager, MemoryCacheManager>();
+
 var app = builder.Build();
 
 // wwwroot klasörünü oluştur
@@ -85,7 +92,7 @@ Directory.CreateDirectory(webRootPath);
 var uploadsPath = Path.Combine(webRootPath, "Uploads", "Images");
 Directory.CreateDirectory(uploadsPath);
 
-// CORS'u en başa al
+// CORS'u en başa al ve policy'yi uygula
 app.UseCors("AllowOrigin");
 
 // Statik dosya servisini etkinleştir

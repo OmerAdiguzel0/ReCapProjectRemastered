@@ -12,42 +12,49 @@ namespace Core.CrossCuttingConcerns.Caching.Microsoft
 {
     public class MemoryCacheManager : ICacheManager
     {
-        //Adapter Pattern
-        IMemoryCache _memoryCache;
-        public MemoryCacheManager()
+        private readonly IMemoryCache _cache;
+
+        public MemoryCacheManager(IMemoryCache cache)
         {
-            _memoryCache = ServiceTool.ServiceProvider.GetService<IMemoryCache>();
+            _cache = cache;
         }
 
         public void Add(string key, object value, int duration)
         {
-            _memoryCache.Set(key,value,TimeSpan.FromMinutes(duration));
+            _cache.Set(key,value,TimeSpan.FromMinutes(duration));
         }
 
         public T Get<T>(string key)
         {
-            return _memoryCache.Get<T>(key);
+            return _cache.Get<T>(key);
         }
 
         public object Get(string key)
         {
-            return _memoryCache.Get(key);
+            return _cache.Get(key);
         }
 
         public bool IsAdd(string key)
         {
-            return _memoryCache.TryGetValue(key,out _);
+            return _cache.TryGetValue(key,out _);
         }
 
         public void Remove(string key)
         {
-            _memoryCache.Remove(key);
+            _cache.Remove(key);
         }
 
         public void RemoveByPattern(string pattern)
         {
+            if (string.IsNullOrEmpty(pattern)) return;
+
             var cacheEntriesCollectionDefinition = typeof(MemoryCache).GetProperty("EntriesCollection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var cacheEntriesCollection = cacheEntriesCollectionDefinition.GetValue(_memoryCache) as dynamic;
+            
+            if (cacheEntriesCollectionDefinition == null) return;
+
+            var cacheEntriesCollection = cacheEntriesCollectionDefinition.GetValue(_cache) as dynamic;
+            if (cacheEntriesCollection == null) return;
+
             List<ICacheEntry> cacheCollectionValues = new List<ICacheEntry>();
 
             foreach (var cacheItem in cacheEntriesCollection)
@@ -61,7 +68,7 @@ namespace Core.CrossCuttingConcerns.Caching.Microsoft
 
             foreach (var key in keysToRemove)
             {
-                _memoryCache.Remove(key);
+                _cache.Remove(key);
             }
         }
     }

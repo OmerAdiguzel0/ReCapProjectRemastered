@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using DataAccess.Abstract;
 using Entities.Concrete;
 using Entities.DTOs;
+using DataAccess.Concrete.EntityFramework;
 
 namespace DataAccess.Concrete.InMemory
 {
@@ -108,6 +109,11 @@ namespace DataAccess.Concrete.InMemory
                              ImagePaths = new List<string>()  // Boş liste oluştur
                          };
             return result.ToList();
+        }
+
+        public RentACarContext GetContext()
+        {
+            throw new NotImplementedException("InMemory implementation does not support database context");
         }
     }
 }
