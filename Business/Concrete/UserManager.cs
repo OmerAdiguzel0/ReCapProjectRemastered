@@ -4,6 +4,7 @@ using Core.Entities.Concrete;
 using Core.Utilities.Results;
 using Core.Utilities.Results.Abstract;
 using Core.Utilities.Results.Concrete;
+using Core.Utilities.Security.Hashing;
 using DataAccess.Abstract;
 using System;
 using System.Collections.Generic;
@@ -264,6 +265,33 @@ namespace Business.Concrete
             catch (Exception ex)
             {
                 return new ErrorDataResult<User>($"Kullanıcı aranırken hata oluştu: {ex.Message}");
+            }
+        }
+
+        public IResult ChangePassword(User user, string currentPassword, string newPassword)
+        {
+            try
+            {
+                // Mevcut şifreyi doğrula
+                if (!HashingHelper.VerifyPasswordHash(currentPassword, user.PasswordHash, user.PasswordSalt))
+                {
+                    return new ErrorResult("Mevcut şifre yanlış");
+                }
+
+                // Yeni şifre için hash oluştur
+                byte[] passwordHash, passwordSalt;
+                HashingHelper.CreatePasswordHash(newPassword, out passwordHash, out passwordSalt);
+
+                // Kullanıcının şifresini güncelle
+                user.PasswordHash = passwordHash;
+                user.PasswordSalt = passwordSalt;
+
+                _userDal.Update(user);
+                return new SuccessResult("Şifre başarıyla güncellendi");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Şifre değiştirme işlemi başarısız: {ex.Message}");
             }
         }
     }
