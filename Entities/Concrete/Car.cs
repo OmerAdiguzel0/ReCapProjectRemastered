@@ -9,7 +9,6 @@ namespace Entities.Concrete
         public Car()
         {
             CarImages = new List<CarImage>();
-            MinFindeksScore = 500;
         }
 
         public int CarId { get; set; }
@@ -20,9 +19,9 @@ namespace Entities.Concrete
         public string Description { get; set; }
         public int MinFindeksScore { get; set; }
 
-        // Navigation properties'leri virtual ve nullable yap
-        public virtual Brand? Brand { get; set; }
-        public virtual Color? Color { get; set; }
+        // Navigation properties
+        public virtual Brand Brand { get; set; }
+        public virtual Color Color { get; set; }
         public virtual ICollection<CarImage> CarImages { get; set; }
     }
 }

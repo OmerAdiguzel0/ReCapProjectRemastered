@@ -8,26 +8,46 @@ namespace Core.Utilities.Helpers.FileHelper
         {
             try
             {
-                if (file == null || file.Length == 0)
-                    throw new ArgumentException("Dosya seçilmedi veya boş.");
+                Console.WriteLine($"\n=== FileHelper Upload Started ===");
+                Console.WriteLine($"File Name: {file?.FileName}");
+                Console.WriteLine($"File Size: {file?.Length} bytes");
+                Console.WriteLine($"Content Type: {file?.ContentType}");
+                Console.WriteLine($"Upload Path: {root}");
+
+                if (file == null) return null;
 
                 if (!Directory.Exists(root))
-                    Directory.CreateDirectory(root);
-
-                string extension = Path.GetExtension(file.FileName).ToLower();
-                string fileName = Guid.NewGuid().ToString() + extension;
-                string filePath = Path.Combine(root, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    file.CopyTo(stream);
+                    Console.WriteLine($"Creating directory: {root}");
+                    Directory.CreateDirectory(root);
                 }
 
-                return fileName;  // Sadece dosya adını döndür
+                string extension = Path.GetExtension(file.FileName);
+                string guid = Guid.NewGuid().ToString();
+                string filePath = guid + extension;
+
+                Console.WriteLine($"Generated File Name: {filePath}");
+                Console.WriteLine($"Full Path: {Path.Combine(root, filePath)}");
+
+                using (FileStream fileStream = File.Create(Path.Combine(root, filePath)))
+                {
+                    file.CopyTo(fileStream);
+                    fileStream.Flush();
+                    Console.WriteLine("File successfully written to disk");
+                }
+
+                return filePath;
             }
             catch (Exception ex)
             {
-                throw new Exception($"Dosya yükleme hatası: {ex.Message}");
+                Console.WriteLine($"\n=== FileHelper Upload Error ===");
+                Console.WriteLine($"Error Type: {ex.GetType().Name}");
+                Console.WriteLine($"Error Message: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
+                throw;
             }
         }
 

@@ -5,8 +5,10 @@ using Core.Utilities.Helpers.FileHelper;
 using Core.Utilities.Results.Abstract;
 using Core.Utilities.Results.Concrete;
 using DataAccess.Abstract;
+using DataAccess.Concrete.EntityFramework;
 using Entities.Concrete;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace Business.Concrete
 {
@@ -14,42 +16,82 @@ namespace Business.Concrete
     {
         ICarImageDal _carImageDal;
         IFileHelper _fileHelper;
+        ICarService _carService;
 
-        public CarImageManager(ICarImageDal carImageDal, IFileHelper fileHelper)
+        public CarImageManager(ICarImageDal carImageDal, IFileHelper fileHelper, ICarService carService)
         {
             _carImageDal = carImageDal;
             _fileHelper = fileHelper;
+            _carService = carService;
         }
 
-        public IResult Add(IFormFile formFile, CarImage carImage)
+        public IResult Add(IFormFile file, int carId)
         {
-            try 
+            string uploadResult = null;
+            try
             {
-                if (formFile == null)
+                Console.WriteLine($"\n=== CarImageManager Add Started ===");
+                Console.WriteLine($"CarId: {carId}");
+                Console.WriteLine($"File Info: {file?.FileName}, {file?.Length} bytes");
+
+                var car = _carService.GetById(carId);
+                Console.WriteLine($"Car Found: {car.Success}");
+                if (!car.Success)
                 {
-                    return new ErrorResult("Dosya seçilmedi");
+                    return new ErrorResult("Araç bulunamadı");
                 }
 
-                IResult result = BusinessRules.Run(CheckIfCarImageCountOfCarCorrect(carImage.CarId));
-                if (result != null)
+                var imageCount = _carImageDal.GetAll(c => c.CarId == carId).Count;
+                Console.WriteLine($"Current Image Count: {imageCount}");
+                if (imageCount >= 5)
                 {
-                    return result;
+                    return new ErrorResult("Bir arabaya en fazla 5 resim eklenebilir");
                 }
 
-                string fileName = _fileHelper.Upload(formFile, PathConstants.ImagesPath);
-                if (string.IsNullOrEmpty(fileName))
+                Console.WriteLine("Uploading file...");
+                uploadResult = _fileHelper.Upload(file, PathConstants.ImagesPath);
+                Console.WriteLine($"Upload Result: {uploadResult}");
+
+                if (string.IsNullOrEmpty(uploadResult))
                 {
                     return new ErrorResult("Dosya yüklenemedi");
                 }
 
-                carImage.ImagePath = fileName;
-                carImage.Date = DateTime.Now;
-                _carImageDal.Add(carImage);
+                var carImage = new CarImage
+                {
+                    ImagePath = uploadResult,
+                    CarId = carId,
+                    Date = DateTime.Now
+                };
 
-                return new SuccessResult(Messages.ImageUploaded);
+                Console.WriteLine("Adding to database...");
+                Console.WriteLine($"CarImage: CarId={carImage.CarId}, Path={carImage.ImagePath}");
+                _carImageDal.Add(carImage);
+                
+                Console.WriteLine("Committing transaction...");
+                return new SuccessResult("Resim başarıyla yüklendi");
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"\n=== CarImageManager Add Error ===");
+                Console.WriteLine($"Error Type: {ex.GetType().Name}");
+                Console.WriteLine($"Error Message: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Exception Type: {ex.InnerException.GetType().Name}");
+                    Console.WriteLine($"Inner Exception Message: {ex.InnerException.Message}");
+                }
+
+                if (!string.IsNullOrEmpty(uploadResult))
+                {
+                    try
+                    {
+                        Console.WriteLine($"Cleaning up uploaded file: {uploadResult}");
+                        _fileHelper.Delete(Path.Combine(PathConstants.ImagesPath, uploadResult));
+                    }
+                    catch { /* cleanup error */ }
+                }
+                
                 return new ErrorResult($"Resim yükleme hatası: {ex.Message}");
             }
         }
@@ -133,16 +175,17 @@ namespace Business.Concrete
         {
             try
             {
-                var result = _carImageDal.Get(c => c.CarImageId == imageId);
+                var result = _carImageDal.Get(c => c.Id == imageId);
                 if (result == null)
                 {
                     return new ErrorDataResult<CarImage>("Resim bulunamadı");
                 }
+
                 return new SuccessDataResult<CarImage>(result);
             }
             catch (Exception ex)
             {
-                return new ErrorDataResult<CarImage>(ex.Message);
+                return new ErrorDataResult<CarImage>($"Resim getirilirken bir hata oluştu: {ex.Message}");
             }
         }
 

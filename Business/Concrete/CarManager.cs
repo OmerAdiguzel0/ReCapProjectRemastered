@@ -65,27 +65,64 @@ namespace Business.Concrete
         {
             try 
             {
+                Console.WriteLine("=== CarManager Add Method Started ===");
+                
+                if (car == null)
+                    return new ErrorResult("Araba bilgileri boş olamaz");
+
+                Console.WriteLine($"Validations Started - BrandId: {car.BrandId}, ColorId: {car.ColorId}");
+
+                if (car.BrandId <= 0)
+                    return new ErrorResult($"Geçersiz marka ID: {car.BrandId}");
+                    
+                if (car.ColorId <= 0)
+                    return new ErrorResult($"Geçersiz renk ID: {car.ColorId}");
+
+                if (string.IsNullOrWhiteSpace(car.Description))
+                    return new ErrorResult("Açıklama boş olamaz");
+
+                Console.WriteLine("Navigation properties cleaning...");
+                car.Brand = null;
+                car.Color = null;
+                car.CarImages ??= new List<CarImage>();
+
+                Console.WriteLine("Business rules check started...");
                 IResult result = BusinessRules.Run(CheckInCarCountOfBrandCorrect(car.BrandId));
                 if (result != null)
                 {
+                    Console.WriteLine($"Business rule failed: {result.Message}");
                     return result;
                 }
 
-                car.Brand = null;
-                car.Color = null;
-                car.CarImages = new List<CarImage>();
-
-                if (car.MinFindeksScore <= 0)
+                Console.WriteLine("Calling EfCarDal.Add...");
+                try
                 {
-                    car.MinFindeksScore = 500;
+                    _carDal.Add(car);
+                    Console.WriteLine("Car successfully added");
+                    return new SuccessResult(Messages.CarAdded);
                 }
-
-                _carDal.Add(car);
-                return new SuccessResult(Messages.CarAdded);
+                catch (Exception innerEx)
+                {
+                    Console.WriteLine($"=== Error in EfCarDal.Add ===");
+                    Console.WriteLine($"Error Type: {innerEx.GetType().Name}");
+                    Console.WriteLine($"Error Message: {innerEx.Message}");
+                    if (innerEx.InnerException != null)
+                    {
+                        Console.WriteLine($"Inner Exception: {innerEx.InnerException.Message}");
+                    }
+                    return new ErrorResult("Araba eklenirken bir hata oluştu");
+                }
             }
             catch (Exception ex)
             {
-                return new ErrorResult($"Araba eklenirken bir hata oluştu: {ex.InnerException?.Message ?? ex.Message}");
+                Console.WriteLine($"=== CarManager Add Method Error ===");
+                Console.WriteLine($"Error Type: {ex.GetType().Name}");
+                Console.WriteLine($"Error Message: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
+                return new ErrorResult($"Araba eklenirken bir hata oluştu: {ex.Message}");
             }
         }
 

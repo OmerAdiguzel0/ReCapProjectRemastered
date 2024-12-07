@@ -40,7 +40,7 @@ namespace DataAccess.Concrete.EntityFramework
             modelBuilder.Entity<Color>().HasKey(c => c.ColorId);
             modelBuilder.Entity<Customer>().HasKey(c => c.CustomerId);
             modelBuilder.Entity<Rental>().HasKey(r => r.RentalId);
-            modelBuilder.Entity<CarImage>().HasKey(ci => ci.CarImageId);
+            modelBuilder.Entity<CarImage>().HasKey(ci => ci.Id);
             modelBuilder.Entity<OperationClaim>().HasKey(oc => oc.Id);
             modelBuilder.Entity<User>().HasKey(u => u.Id);
             modelBuilder.Entity<UserOperationClaim>().HasKey(uoc => uoc.Id);
@@ -57,12 +57,6 @@ namespace DataAccess.Concrete.EntityFramework
                 .WithMany()
                 .HasForeignKey(c => c.ColorId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<Car>()
-                .HasMany(c => c.CarImages)
-                .WithOne()
-                .HasForeignKey(ci => ci.CarId)
-                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Customer>()
                 .HasOne<User>()
@@ -93,6 +87,29 @@ namespace DataAccess.Concrete.EntityFramework
                 .WithMany()
                 .HasForeignKey(uoc => uoc.OperationClaimId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // CarImage konfigürasyonu
+            modelBuilder.Entity<CarImage>(entity =>
+            {
+                entity.ToTable("car_images");
+                entity.HasKey(e => e.Id);  // Primary key
+                
+                // Kolon adlarını açıkça belirt
+                entity.Property(e => e.Id).HasColumnName("CarImageId");
+                entity.Property(e => e.CarId).HasColumnName("CarId");
+                entity.Property(e => e.ImagePath).HasColumnName("ImagePath");
+                entity.Property(e => e.Date).HasColumnName("Date");
+
+                // İlişkiyi tanımla
+                entity.HasOne(ci => ci.Car)
+                    .WithMany(c => c.CarImages)
+                    .HasForeignKey(ci => ci.CarId);
+            });
+
+            // Car entity'sinde CarImage ilişkisini kaldır
+            modelBuilder.Entity<Car>()
+                .Navigation(c => c.CarImages)
+                .UsePropertyAccessMode(PropertyAccessMode.Property);
         }
     }
 }
