@@ -21,5 +21,6 @@ namespace Business.Abstract
         IResult AddRole(string roleName);
         IResult DeleteRole(int roleId);
         IResult UpdateRole(int roleId, string roleName);
+        IResult ChangePassword(User user, string currentPassword, string newPassword);
     }
 }

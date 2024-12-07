@@ -3,6 +3,8 @@ using Core.Entities.Concrete;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Core.Utilities.Results;
+using Core.Utilities.Security.Hashing;
+using System.Security.Claims;
 
 namespace WebAPI.Controllers
 {
@@ -147,6 +149,52 @@ namespace WebAPI.Controllers
                 return BadRequest(new { success = false, message = $"Silme işlemi sırasında hata oluştu: {ex.Message}" });
             }
         }
+
+        [HttpPost("changepassword")]
+        [Authorize]
+        public IActionResult ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            try
+            {
+                // Mevcut kullanıcıyı al
+                var userEmail = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+                var userResult = _userService.GetByMail(userEmail);
+                
+                if (!userResult.Success)
+                {
+                    return BadRequest(new { success = false, message = "Kullanıcı bulunamadı" });
+                }
+
+                var user = userResult.Data;
+
+                // Mevcut şifreyi doğrula
+                if (!HashingHelper.VerifyPasswordHash(request.CurrentPassword, user.PasswordHash, user.PasswordSalt))
+                {
+                    return BadRequest(new { success = false, message = "Mevcut şifre yanlış" });
+                }
+
+                // Yeni şifre için hash oluştur
+                byte[] passwordHash, passwordSalt;
+                HashingHelper.CreatePasswordHash(request.NewPassword, out passwordHash, out passwordSalt);
+
+                // Kullanıcının şifresini güncelle
+                user.PasswordHash = passwordHash;
+                user.PasswordSalt = passwordSalt;
+
+                var result = _userService.Update(user);
+
+                if (result.Success)
+                {
+                    return Ok(new { success = true, message = "Şifre başarıyla güncellendi" });
+                }
+
+                return BadRequest(new { success = false, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Şifre değiştirme işlemi başarısız: {ex.Message}" });
+            }
+        }
     }
 
     public class RoleRequest
@@ -157,5 +205,11 @@ namespace WebAPI.Controllers
     public class RoleUpdateRequest
     {
         public int RoleId { get; set; }
+    }
+
+    public class ChangePasswordRequest
+    {
+        public string CurrentPassword { get; set; }
+        public string NewPassword { get; set; }
     }
 }
