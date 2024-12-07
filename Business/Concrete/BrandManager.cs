@@ -18,10 +18,12 @@ namespace Business.Concrete
     public class BrandManager:IBrandService
     {
         private IBrandDal _brandDal;
+        private ICarDal _carDal;
 
-        public BrandManager(IBrandDal brandDal)
+        public BrandManager(IBrandDal brandDal, ICarDal carDal)
         {
             _brandDal = brandDal;
+            _carDal = carDal;
         }
 
         public IDataResult<List<Brand>> GetAll()
@@ -49,8 +51,22 @@ namespace Business.Concrete
 
         public IResult Delete(Brand brand)
         {
-            _brandDal.Delete(brand);
-            return new SuccessResult(Messages.BrandDeleted);
+            try
+            {
+                // Marka ile ilişkili araçları kontrol et
+                var carsWithBrand = _carDal.GetAll(c => c.BrandId == brand.BrandId);
+                if (carsWithBrand.Any())
+                {
+                    return new ErrorResult("Bu markaya ait araçlar bulunduğu için silinemez");
+                }
+
+                _brandDal.Delete(brand);
+                return new SuccessResult(Messages.BrandDeleted);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Marka silinirken bir hata oluştu: {ex.Message}");
+            }
         }
 
         [ValidationAspect(typeof(BrandValidator))]

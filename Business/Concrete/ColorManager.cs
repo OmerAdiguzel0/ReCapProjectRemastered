@@ -18,10 +18,12 @@ namespace Business.Concrete
     public class ColorManager : IColorService
     {
         private IColorDal _colorDal;
+        private ICarDal _carDal;
 
-        public ColorManager(IColorDal colorDal)
+        public ColorManager(IColorDal colorDal, ICarDal carDal)
         {
             _colorDal = colorDal;
+            _carDal = carDal;
         }
 
         public IDataResult<List<Color>> GetAll()
@@ -49,8 +51,21 @@ namespace Business.Concrete
 
         public IResult Delete(Color color)
         {
-            _colorDal.Delete(color);
-            return new SuccessResult(Messages.ColorDeleted);
+            try
+            {
+                var carsWithColor = _carDal.GetAll(c => c.ColorId == color.ColorId);
+                if (carsWithColor.Any())
+                {
+                    return new ErrorResult("Bu renge ait araçlar bulunduğu için silinemez");
+                }
+
+                _colorDal.Delete(color);
+                return new SuccessResult(Messages.ColorDeleted);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Renk silinirken bir hata oluştu: {ex.Message}");
+            }
         }
 
         [ValidationAspect(typeof(ColorValidator))]

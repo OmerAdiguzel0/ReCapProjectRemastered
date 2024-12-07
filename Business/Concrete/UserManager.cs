@@ -1,4 +1,5 @@
 ﻿using Business.Abstract;
+using Business.Constants;
 using Core.Entities.Concrete;
 using Core.Utilities.Results;
 using Core.Utilities.Results.Abstract;
@@ -62,12 +63,29 @@ namespace Business.Concrete
         {
             try
             {
+                // Kullanıcının rollerini kontrol et
+                var claims = GetClaims(user);
+                if (!claims.Success)
+                {
+                    return new ErrorResult("Kullanıcı rolleri alınamadı");
+                }
+
+                // Admin kullanıcısının silinmesini engelle
+                if (claims.Data.Any(c => c.Name == "admin"))
+                {
+                    return new ErrorResult("Admin kullanıcısı silinemez");
+                }
+
+                // Önce kullanıcının rollerini sil
+                _userDal.DeleteUserOperationClaims(user.Id);
+
+                // Sonra kullanıcıyı sil
                 _userDal.Delete(user);
-                return new SuccessResult();
+                return new SuccessResult(Messages.DeletedUser);
             }
             catch (Exception ex)
             {
-                return new ErrorResult($"Kullanıcı silinirken hata oluştu: {ex.Message}");
+                return new ErrorResult($"Kullanıcı silinirken bir hata oluştu: {ex.Message}");
             }
         }
 
@@ -230,6 +248,22 @@ namespace Business.Concrete
             catch (Exception ex)
             {
                 return new ErrorResult($"Rol güncellenirken hata oluştu: {ex.Message}");
+            }
+        }
+
+        public IDataResult<User> GetById(int id)
+        {
+            try
+            {
+                var user = _userDal.Get(u => u.Id == id);
+                if (user == null)
+                    return new ErrorDataResult<User>("Kullanıcı bulunamadı");
+
+                return new SuccessDataResult<User>(user);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<User>($"Kullanıcı aranırken hata oluştu: {ex.Message}");
             }
         }
     }

@@ -21,34 +21,39 @@ namespace Business.DependencyResolvers.Autofac
     {
         protected override void Load(ContainerBuilder builder)
         {
-            builder.RegisterType<CarManager>().As<ICarService>();
-            builder.RegisterType<EfCarDal>().As<ICarDal>();
+            // Car
+            builder.RegisterType<CarManager>().As<ICarService>().SingleInstance();
+            builder.RegisterType<EfCarDal>().As<ICarDal>().SingleInstance();
 
-            builder.RegisterType<BrandManager>().As<IBrandService>();
-            builder.RegisterType<EfBrandDal>().As<IBrandDal>();
+            // Brand
+            builder.RegisterType<BrandManager>().As<IBrandService>().SingleInstance();
+            builder.RegisterType<EfBrandDal>().As<IBrandDal>().SingleInstance();
 
-            builder.RegisterType<ColorManager>().As<IColorService>();
-            builder.RegisterType<EfColorDal>().As<IColorDal>();
+            // Color
+            builder.RegisterType<ColorManager>().As<IColorService>().SingleInstance();
+            builder.RegisterType<EfColorDal>().As<IColorDal>().SingleInstance();
 
-            builder.RegisterType<RentalManager>().As<IRentalService>();
-            builder.RegisterType<EfRentalDal>().As<IRentalDal>();
+            // Rental
+            builder.RegisterType<RentalManager>().As<IRentalService>().SingleInstance();
+            builder.RegisterType<EfRentalDal>().As<IRentalDal>().SingleInstance();
 
-            builder.RegisterType<CustomerManager>().As<ICustomerService>();
-            builder.RegisterType<EfCustomerDal>().As<ICustomerDal>();
+            // Customer
+            builder.RegisterType<CustomerManager>().As<ICustomerService>().SingleInstance();
+            builder.RegisterType<EfCustomerDal>().As<ICustomerDal>().SingleInstance();
 
-            builder.RegisterType<CarImageManager>().As<ICarImageService>();
-            builder.RegisterType<EfCarImageDal>().As<ICarImageDal>();
+            // CarImage
+            builder.RegisterType<CarImageManager>().As<ICarImageService>().SingleInstance();
+            builder.RegisterType<EfCarImageDal>().As<ICarImageDal>().SingleInstance();
 
-            builder.RegisterType<FileHelper>().As<IFileHelper>();
+            // Helpers & Utils
+            builder.RegisterType<FileHelper>().As<IFileHelper>().SingleInstance();
+            builder.RegisterType<FileLogger>().As<ILogger>().SingleInstance();
 
-            builder.RegisterType<FileLogger>().As<ILogger>();
-
-            builder.RegisterType<UserManager>().As<IUserService>();
-            builder.RegisterType<EfUserDal>().As<IUserDal>();
-
-            builder.RegisterType<AuthManager>().As<IAuthService>();
-            builder.RegisterType<JwtHelper>().As<ITokenHelper>();
-
+            // User & Auth
+            builder.RegisterType<UserManager>().As<IUserService>().SingleInstance();
+            builder.RegisterType<EfUserDal>().As<IUserDal>().SingleInstance();
+            builder.RegisterType<AuthManager>().As<IAuthService>().SingleInstance();
+            builder.RegisterType<JwtHelper>().As<ITokenHelper>().SingleInstance();
 
             var assembly = System.Reflection.Assembly.GetExecutingAssembly();
 
@@ -57,7 +62,6 @@ namespace Business.DependencyResolvers.Autofac
                 {
                     Selector = new AspectInterceptorSelector()
                 }).SingleInstance();
-
         }
     }
 }

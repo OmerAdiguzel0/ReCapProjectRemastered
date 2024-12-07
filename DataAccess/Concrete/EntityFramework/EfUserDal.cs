@@ -99,5 +99,15 @@ namespace DataAccess.Concrete.EntityFramework
                 return context.OperationClaims.ToList();
             }
         }
+
+        public void DeleteUserOperationClaims(int userId)
+        {
+            using (var context = new RentACarContext())
+            {
+                var claims = context.UserOperationClaims.Where(uoc => uoc.UserId == userId);
+                context.UserOperationClaims.RemoveRange(claims);
+                context.SaveChanges();
+            }
+        }
     }
 }

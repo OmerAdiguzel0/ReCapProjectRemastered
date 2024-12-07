@@ -115,6 +115,38 @@ namespace WebAPI.Controllers
             }
             return BadRequest(new { success = false, message = result.Message });
         }
+
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            try
+            {
+                var userToDelete = _userService.GetById(id);
+                if (!userToDelete.Success)
+                {
+                    return BadRequest(new { success = false, message = "Kullanıcı bulunamadı" });
+                }
+
+                // Admin kullanıcısının silinmesini engelle
+                var userClaims = _userService.GetClaims(userToDelete.Data);
+                if (userClaims.Data.Any(c => c.Name == "admin"))
+                {
+                    return BadRequest(new { success = false, message = "Admin kullanıcısı silinemez" });
+                }
+
+                var result = _userService.Delete(userToDelete.Data);
+                if (result.Success)
+                {
+                    return Ok(new { success = true, message = result.Message });
+                }
+
+                return BadRequest(new { success = false, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Silme işlemi sırasında hata oluştu: {ex.Message}" });
+            }
+        }
     }
 
     public class RoleRequest
