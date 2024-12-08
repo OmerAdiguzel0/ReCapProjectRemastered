@@ -66,6 +66,7 @@ namespace Business.Concrete
         [SecuredOperation("car.add,admin")]
         [ValidationAspect(typeof(CarValidator))]
         [LogAspect(typeof(FileLogger))]
+        [PerformanceAspect(5)]
         [CacheRemoveAspect("ICarService.Get")]
         public IResult Add(Car car)
         {
