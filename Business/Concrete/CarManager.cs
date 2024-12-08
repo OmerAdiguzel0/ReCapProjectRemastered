@@ -20,6 +20,8 @@ using Entities.Concrete;
 using Entities.DTOs;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
+using Core.Aspects.Autofac.Logging;
+using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 
 namespace Business.Concrete
 {
@@ -63,128 +65,58 @@ namespace Business.Concrete
 
         [SecuredOperation("car.add,admin")]
         [ValidationAspect(typeof(CarValidator))]
+        [LogAspect(typeof(FileLogger))]
         [CacheRemoveAspect("ICarService.Get")]
         public IResult Add(Car car)
         {
-            try
+            // Navigation property'leri temizle
+            car.Brand = null;
+            car.Color = null;
+            car.CarImages = new List<CarImage>();
+
+            // Default findeks puanını ayarla
+            if (car.MinFindeksScore <= 0)
             {
-                _logger.LogInformation("Car Add Started: {@CarData}", new { 
-                    car.BrandId, 
-                    car.ColorId, 
-                    car.ModelYear,
-                    car.DailyPrice,
-                    car.Description
-                });
-
-                // Validation
-                var validator = new CarValidator();
-                var validationResult = validator.Validate(car);
-                if (!validationResult.IsValid)
-                {
-                    _logger.LogWarning("Validation failed: {@ValidationErrors}", 
-                        validationResult.Errors.Select(e => e.ErrorMessage));
-                    return new ErrorResult(validationResult.Errors.First().ErrorMessage);
-                }
-
-                // Clear navigation properties
-                car.Brand = null;
-                car.Color = null;
-                car.CarImages = new List<CarImage>();
-
-                // Set default values
-                if (car.MinFindeksScore <= 0)
-                {
-                    car.MinFindeksScore = 500;
-                }
-
-                _carDal.Add(car);
-                _logger.LogInformation("Car successfully added with ID: {CarId}", car.CarId);
-                return new SuccessResult(Messages.CarAdded);
+                car.MinFindeksScore = 500;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error adding car: {@CarData}", new { 
-                    car?.BrandId, 
-                    car?.ColorId, 
-                    car?.ModelYear,
-                    car?.DailyPrice,
-                    car?.Description
-                });
-                return new ErrorResult($"Araba eklenirken bir hata oluştu: {ex.Message}");
-            }
+
+            _carDal.Add(car);
+            return new SuccessResult(Messages.CarAdded);
         }
 
+        [SecuredOperation("car.delete,admin")]
+        [LogAspect(typeof(FileLogger))]
         [CacheRemoveAspect("ICarService.Get")]
         public IResult Delete(Car car)
         {
+            var existingCar = _carDal.Get(c => c.CarId == car.CarId);
+            if (existingCar == null)
+            {
+                return new ErrorResult(Messages.CarNotFound);
+            }
+
             _carDal.Delete(car);
             return new SuccessResult(Messages.CarDeleted);
         }
 
-        [CacheRemoveAspect("ICarService.Get")]
+        [SecuredOperation("car.update,admin")]
         [ValidationAspect(typeof(CarValidator))]
+        [LogAspect(typeof(FileLogger))]
+        [CacheRemoveAspect("ICarService.Get")]
         public IResult Update(Car car)
         {
-            try
+            var existingCar = _carDal.Get(c => c.CarId == car.CarId);
+            if (existingCar == null)
             {
-                _logger.LogInformation("Car Update Started: {@CarData}", new { 
-                    car.CarId,
-                    car.BrandId, 
-                    car.ColorId, 
-                    car.ModelYear,
-                    car.DailyPrice,
-                    car.Description,
-                    car.MinFindeksScore
-                });
-
-                // Validation
-                var validator = new CarValidator();
-                var validationResult = validator.Validate(car);
-                if (!validationResult.IsValid)
-                {
-                    _logger.LogWarning("Validation failed: {@ValidationErrors}", 
-                        validationResult.Errors.Select(e => e.ErrorMessage));
-                    return new ErrorResult(validationResult.Errors.First().ErrorMessage);
-                }
-
-                // Arabanın var olup olmadığını kontrol et
-                var existingCar = _carDal.Get(c => c.CarId == car.CarId);
-                if (existingCar == null)
-                {
-                    _logger.LogWarning("Car not found: {CarId}", car.CarId);
-                    return new ErrorResult("Güncellenecek araç bulunamadı");
-                }
-
-                // Navigation property'leri temizle
-                car.Brand = null;
-                car.Color = null;
-
-                _carDal.Update(car);
-                
-                _logger.LogInformation("Car successfully updated: {@Car}", new {
-                    car.CarId,
-                    car.BrandId,
-                    car.ColorId,
-                    car.ModelYear,
-                    car.DailyPrice,
-                    car.Description,
-                    car.MinFindeksScore
-                });
-
-                return new SuccessResult(Messages.CarUpdated);
+                return new ErrorResult(Messages.CarNotFound);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating car: {@CarData}", new { 
-                    car?.CarId,
-                    car?.BrandId, 
-                    car?.ColorId, 
-                    car?.ModelYear,
-                    car?.DailyPrice,
-                    car?.Description
-                });
-                return new ErrorResult($"Araç güncellenirken bir hata oluştu: {ex.Message}");
-            }
+
+            // Navigation property'leri temizle
+            car.Brand = null;
+            car.Color = null;
+
+            _carDal.Update(car);
+            return new SuccessResult(Messages.CarUpdated);
         }
 
         private IResult CheckInCarCountOfBrandCorrect(int brandId)
