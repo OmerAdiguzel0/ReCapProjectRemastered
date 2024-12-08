@@ -1,5 +1,6 @@
 ﻿using Business.Abstract;
 using Business.Constants;
+using Core.Aspects.Autofac.Logging;
 using Core.Utilities.Business;
 using Core.Utilities.Helpers.FileHelper;
 using Core.Utilities.Results.Abstract;
@@ -10,6 +11,7 @@ using Entities.Concrete;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 
 namespace Business.Concrete
 {
@@ -28,23 +30,20 @@ namespace Business.Concrete
             _logger = logger;
         }
 
+        [LogAspect(typeof(ImageLogger))]
         public IResult Add(IFormFile file, CarImage carImage)
         {
             try
             {
-                _logger.LogInformation("Adding image for car {CarId}", carImage.CarId);
-
                 IResult result = BusinessRules.Run(CheckIfCarImageCountOfCarCorrect(carImage.CarId));
                 if (result != null)
                 {
-                    _logger.LogWarning("Business rule check failed: {Message}", result.Message);
                     return result;
                 }
 
                 var uploadResult = _fileHelper.Upload(file, PathConstants.ImagesPath);
                 if (string.IsNullOrEmpty(uploadResult))
                 {
-                    _logger.LogError("File upload failed");
                     return new ErrorResult("Dosya yüklenemedi");
                 }
 
@@ -53,22 +52,15 @@ namespace Business.Concrete
 
                 _carImageDal.Add(carImage);
 
-                _logger.LogInformation("Image successfully added: {@CarImage}", new {
-                    carImage.Id,
-                    carImage.CarId,
-                    carImage.ImagePath,
-                    carImage.Date
-                });
-
                 return new SuccessResult(Messages.ImageUploaded);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding car image");
                 return new ErrorResult($"Resim eklenirken bir hata oluştu: {ex.Message}");
             }
         }
 
+        [LogAspect(typeof(ImageLogger))]
         public IResult Delete(CarImage carImage)
         {
             try
@@ -91,7 +83,7 @@ namespace Business.Concrete
                     string fullPath = Path.Combine(PathConstants.ImagesPath, carImage.ImagePath);
                     if (System.IO.File.Exists(fullPath))
                     {
-                        _fileHelper.Delete(fullPath);
+                        System.IO.File.Delete(fullPath);
                     }
                 }
 
@@ -101,6 +93,40 @@ namespace Business.Concrete
             catch (Exception ex)
             {
                 return new ErrorResult($"Silme işlemi sırasında hata oluştu: {ex.Message}");
+            }
+        }
+
+        [LogAspect(typeof(ImageLogger))]
+        public IResult Update(IFormFile file, CarImage carImage)
+        {
+            try
+            {
+                if (file == null)
+                {
+                    return new ErrorResult("Dosya seçilmedi");
+                }
+
+                if (carImage == null || string.IsNullOrEmpty(carImage.ImagePath))
+                {
+                    return new ErrorResult("Geçersiz resim bilgisi");
+                }
+
+                string oldPath = Path.Combine(PathConstants.ImagesPath, carImage.ImagePath);
+                string newFileName = _fileHelper.Update(file, oldPath, PathConstants.ImagesPath);
+                
+                if (string.IsNullOrEmpty(newFileName))
+                {
+                    return new ErrorResult("Dosya güncellenemedi");
+                }
+
+                carImage.ImagePath = newFileName;
+                carImage.Date = DateTime.UtcNow;
+                _carImageDal.Update(carImage);
+                return new SuccessResult(Messages.UpdatedImage);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Güncelleme işlemi sırasında hata oluştu: {ex.Message}");
             }
         }
 
@@ -159,39 +185,6 @@ namespace Business.Concrete
             catch (Exception ex)
             {
                 return new ErrorDataResult<CarImage>($"Resim getirilirken bir hata oluştu: {ex.Message}");
-            }
-        }
-
-        public IResult Update(IFormFile formFile, CarImage carImage)
-        {
-            try
-            {
-                if (formFile == null)
-                {
-                    return new ErrorResult("Dosya seçilmedi");
-                }
-
-                if (carImage == null || string.IsNullOrEmpty(carImage.ImagePath))
-                {
-                    return new ErrorResult("Geçersiz resim bilgisi");
-                }
-
-                string oldPath = Path.Combine(PathConstants.ImagesPath, carImage.ImagePath);
-                string newFileName = _fileHelper.Update(formFile, oldPath, PathConstants.ImagesPath);
-                
-                if (string.IsNullOrEmpty(newFileName))
-                {
-                    return new ErrorResult("Dosya güncellenemedi");
-                }
-
-                carImage.ImagePath = newFileName;
-                carImage.Date = DateTime.UtcNow;
-                _carImageDal.Update(carImage);
-                return new SuccessResult(Messages.UpdatedImage);
-            }
-            catch (Exception ex)
-            {
-                return new ErrorResult($"Güncelleme işlemi sırasında hata oluştu: {ex.Message}");
             }
         }
 

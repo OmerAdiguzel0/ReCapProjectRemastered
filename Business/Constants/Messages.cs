@@ -46,5 +46,6 @@ namespace Business.Constants
         public static string UserList= "Kullanıcı Listelendi";
         public static string UpdatedUser= "Kullanıcı Güncellendi";
         public static string CarAddedWithDetails = "Araba başarıyla eklendi. ID: {0}";
+        public static string CarNotFound = "Araç bulunamadı";
     }
 }
