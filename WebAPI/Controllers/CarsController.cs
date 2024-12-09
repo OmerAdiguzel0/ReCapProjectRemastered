@@ -20,6 +20,7 @@ namespace WebAPI.Controllers
             _logger = logger;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public IActionResult GetAll()
         {
@@ -68,6 +69,7 @@ namespace WebAPI.Controllers
             return BadRequest(new { success = false, message = result.Message });
         }
         
+        [AllowAnonymous]
         [HttpGet("detail")]
         public IActionResult GetDetail()
         {
