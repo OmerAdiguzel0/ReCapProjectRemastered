@@ -18,10 +18,12 @@ namespace Business.Concrete
     public class RentalManager:IRentalService
     {
         private IRentalDal _rentalDal;
+        private ICustomerDal _customerDal;
 
-        public RentalManager(IRentalDal rentalDal)
+        public RentalManager(IRentalDal rentalDal, ICustomerDal customerDal)
         {
             _rentalDal = rentalDal;
+            _customerDal = customerDal;
         }
 
         public IDataResult<List<Rental>> GetAll()
@@ -32,14 +34,41 @@ namespace Business.Concrete
         [ValidationAspect(typeof(RentalValidator))]
         public IResult Add(Rental rental)
         {
-            var result = _rentalDal.Get(r=>r.CarId==rental.CarId && r.ReturnDate==null);
-
-            if (result==null)
+            try
             {
+                // Araç müsaitlik kontrolü
+                var carAvailable = _rentalDal.GetAll(r => r.CarId == rental.CarId && 
+                    r.ReturnDate >= rental.RentDate && 
+                    r.RentDate <= rental.ReturnDate).Any();
+
+                if (carAvailable)
+                {
+                    return new ErrorResult("Bu araç seçilen tarihler için müsait değil");
+                }
+
+                // Kullanıcının customer kaydını kontrol et veya oluştur
+                var customer = _customerDal.Get(c => c.UserId == rental.CustomerId);
+                if (customer == null)
+                {
+                    // Yeni customer kaydı oluştur
+                    customer = new Customer
+                    {
+                        UserId = rental.CustomerId,
+                        CompanyName = "Bireysel" // veya kullanıcıdan alınan başka bir değer
+                    };
+                    _customerDal.Add(customer);
+                }
+
+                // Rental kaydını customer ID ile oluştur
+                rental.CustomerId = customer.CustomerId; // Id yerine CustomerId kullanıyoruz
                 _rentalDal.Add(rental);
-                return new SuccessResult();
+                
+                return new SuccessResult("Kiralama işlemi başarıyla tamamlandı");
             }
-            return new ErrorResult(Messages.CarAlreadyRented);
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Kiralama işlemi sırasında bir hata oluştu: {ex.Message}");
+            }
         }
 
         public IResult Delete(Rental rental)

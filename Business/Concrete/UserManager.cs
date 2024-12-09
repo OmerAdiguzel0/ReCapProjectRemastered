@@ -257,14 +257,29 @@ namespace Business.Concrete
         {
             try
             {
+                Console.WriteLine($"\n=== UserManager.GetById Started ===");
+                Console.WriteLine($"Searching for User ID: {id}");
+
                 var user = _userDal.Get(u => u.Id == id);
+                
                 if (user == null)
+                {
+                    Console.WriteLine("User not found");
                     return new ErrorDataResult<User>("Kullanıcı bulunamadı");
+                }
+
+                Console.WriteLine($"User found: ID={user.Id}, Email={user.Email}, FindeksScore={user.FindeksScore}");
+                Console.WriteLine("=== UserManager.GetById Completed ===\n");
 
                 return new SuccessDataResult<User>(user);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"\n=== UserManager.GetById Error ===");
+                Console.WriteLine($"Error Message: {ex.Message}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+                Console.WriteLine("=== Error Log End ===\n");
+
                 return new ErrorDataResult<User>($"Kullanıcı aranırken hata oluştu: {ex.Message}");
             }
         }

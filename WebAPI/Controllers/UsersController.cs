@@ -280,6 +280,51 @@ namespace WebAPI.Controllers
                 return BadRequest(new { success = false, message = $"Profil fotoğrafı alınırken hata oluştu: {ex.Message}" });
             }
         }
+
+        [HttpGet("findeks-score/{userId}")]
+        public IActionResult GetFindeksScore(int userId)
+        {
+            try
+            {
+                Console.WriteLine($"\n=== GetFindeksScore Started ===");
+                Console.WriteLine($"Requested UserId: {userId}");
+
+                var user = _userService.GetById(userId);
+                Console.WriteLine($"User found: {user.Success}");
+
+                if (!user.Success)
+                {
+                    Console.WriteLine($"User not found for ID: {userId}");
+                    return BadRequest(new { success = false, message = "Kullanıcı bulunamadı" });
+                }
+
+                Console.WriteLine($"User Data: ID={user.Data.Id}, Email={user.Data.Email}, FindeksScore={user.Data.FindeksScore}");
+                Console.WriteLine($"Raw FindeksScore value: {user.Data.FindeksScore?.ToString() ?? "null"}");
+
+                var response = new { 
+                    success = true, 
+                    data = user.Data.FindeksScore ?? 0
+                };
+                Console.WriteLine($"Sending response: {System.Text.Json.JsonSerializer.Serialize(response)}");
+                Console.WriteLine("=== GetFindeksScore Completed ===\n");
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\n=== GetFindeksScore Error ===");
+                Console.WriteLine($"Error Type: {ex.GetType().Name}");
+                Console.WriteLine($"Error Message: {ex.Message}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
+                Console.WriteLine("=== Error Log End ===\n");
+                
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
     }
 
     public class RoleRequest

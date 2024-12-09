@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Business.Abstract;
 using Business.ValidationRules.FluentValidation;
 using Core.Aspects.Autofac.Validation;
@@ -13,7 +10,7 @@ using Entities.Concrete;
 
 namespace Business.Concrete
 {
-    public class CustomerManager:ICustomerService
+    public class CustomerManager : ICustomerService
     {
         private ICustomerDal _customerDal;
 
@@ -29,26 +26,53 @@ namespace Business.Concrete
 
         public IDataResult<Customer> GetById(int customerId)
         {
-            return new SuccessDataResult<Customer>(_customerDal.Get(c=>c.CustomerId==customerId));
+            return new SuccessDataResult<Customer>(_customerDal.Get(c => c.CustomerId == customerId));
+        }
+
+        public IDataResult<Customer> GetByUserId(int userId)
+        {
+            var customer = _customerDal.Get(c => c.UserId == userId);
+            return new SuccessDataResult<Customer>(customer);
         }
 
         [ValidationAspect(typeof(CustomerValidator))]
         public IResult Add(Customer customer)
         {
-            _customerDal.Add(customer);
-            return new SuccessResult();
+            try
+            {
+                _customerDal.Add(customer);
+                return new SuccessResult("Müşteri başarıyla eklendi");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Müşteri eklenirken hata oluştu: {ex.Message}");
+            }
         }
 
         public IResult Delete(Customer customer)
         {
-            _customerDal.Delete(customer);
-            return new SuccessResult();
+            try
+            {
+                _customerDal.Delete(customer);
+                return new SuccessResult("Müşteri başarıyla silindi");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Müşteri silinirken hata oluştu: {ex.Message}");
+            }
         }
 
         public IResult Update(Customer customer)
         {
-            _customerDal.Update(customer);
-            return new SuccessResult();
+            try
+            {
+                _customerDal.Update(customer);
+                return new SuccessResult("Müşteri başarıyla güncellendi");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Müşteri güncellenirken hata oluştu: {ex.Message}");
+            }
         }
     }
 }
