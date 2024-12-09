@@ -48,7 +48,7 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
 
-// CORS ayarlarını güncelle
+// CORS ayarlarını güncelle - anonim erişime izin ver
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowOrigin",
@@ -137,9 +137,13 @@ var app = builder.Build();
 var webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
 Directory.CreateDirectory(webRootPath);
 
-// Uploads/Images klasörünü oluştur
-var uploadsPath = Path.Combine(webRootPath, "Uploads", "Images");
+// Uploads klasörünü oluştur
+var uploadsPath = Path.Combine(webRootPath, "Uploads");
 Directory.CreateDirectory(uploadsPath);
+
+// Alt klasörleri oluştur
+Directory.CreateDirectory(Path.Combine(uploadsPath, "Images")); // Araç resimleri için
+Directory.CreateDirectory(Path.Combine(uploadsPath, "ProfileImages")); // Profil fotoğrafları için
 
 // CORS'u en başa al ve policy'yi uygula
 app.UseCors("AllowOrigin");
