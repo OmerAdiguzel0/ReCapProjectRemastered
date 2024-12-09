@@ -22,5 +22,10 @@ namespace Business.Abstract
         IResult DeleteRole(int roleId);
         IResult UpdateRole(int roleId, string roleName);
         IResult ChangePassword(User user, string currentPassword, string newPassword);
+        
+        // Profil fotoğrafı işlemleri için yeni metodlar
+        IResult UpdateProfileImage(int userId, string imagePath);
+        IResult DeleteProfileImage(int userId);
+        IDataResult<string> GetProfileImage(int userId);
     }
 }

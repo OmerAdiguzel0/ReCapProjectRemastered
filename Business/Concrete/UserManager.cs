@@ -8,6 +8,7 @@ using Core.Utilities.Security.Hashing;
 using DataAccess.Abstract;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace Business.Concrete
@@ -292,6 +293,77 @@ namespace Business.Concrete
             catch (Exception ex)
             {
                 return new ErrorResult($"Şifre değiştirme işlemi başarısız: {ex.Message}");
+            }
+        }
+
+        public IResult UpdateProfileImage(int userId, string imagePath)
+        {
+            try
+            {
+                var user = _userDal.Get(u => u.Id == userId);
+                if (user == null)
+                    return new ErrorResult("Kullanıcı bulunamadı");
+
+                // Eski resmi sil
+                if (!string.IsNullOrEmpty(user.ProfileImagePath))
+                {
+                    var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", user.ProfileImagePath);
+                    if (File.Exists(oldImagePath))
+                    {
+                        File.Delete(oldImagePath);
+                    }
+                }
+
+                user.ProfileImagePath = imagePath;
+                _userDal.Update(user);
+                return new SuccessResult("Profil fotoğrafı güncellendi");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Profil fotoğrafı güncellenirken hata oluştu: {ex.Message}");
+            }
+        }
+
+        public IResult DeleteProfileImage(int userId)
+        {
+            try
+            {
+                var user = _userDal.Get(u => u.Id == userId);
+                if (user == null)
+                    return new ErrorResult("Kullanıcı bulunamadı");
+
+                if (!string.IsNullOrEmpty(user.ProfileImagePath))
+                {
+                    var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", user.ProfileImagePath);
+                    if (File.Exists(imagePath))
+                    {
+                        File.Delete(imagePath);
+                    }
+                }
+
+                user.ProfileImagePath = null;
+                _userDal.Update(user);
+                return new SuccessResult("Profil fotoğrafı silindi");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Profil fotoğrafı silinirken hata oluştu: {ex.Message}");
+            }
+        }
+
+        public IDataResult<string> GetProfileImage(int userId)
+        {
+            try
+            {
+                var user = _userDal.Get(u => u.Id == userId);
+                if (user == null)
+                    return new ErrorDataResult<string>("Kullanıcı bulunamadı");
+
+                return new SuccessDataResult<string>(user.ProfileImagePath);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<string>($"Profil fotoğrafı alınırken hata oluştu: {ex.Message}");
             }
         }
     }

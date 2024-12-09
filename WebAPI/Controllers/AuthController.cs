@@ -24,39 +24,43 @@ namespace WebAPI.Controllers
         [HttpPost("login")]
         public ActionResult Login(UserForLoginDto userForLoginDto)
         {
-            var userToLogin = _authService.Login(userForLoginDto);
-            if (!userToLogin.Success)
+            try 
             {
-                return BadRequest(new { success = false, message = userToLogin.Message });
-            }
-
-            var result = _authService.CreateAccessToken(userToLogin.Data);
-            if (result.Success)
-            {
-                // Kullanıcı rollerini kontrol et
-                var claims = _userService.GetClaims(userToLogin.Data);
-                var isAdmin = claims.Data.Any(c => c.Name.ToLower() == "admin");
-
-                var response = new
+                var userToLogin = _authService.Login(userForLoginDto);
+                if (!userToLogin.Success)
                 {
-                    success = true,
-                    message = "Giriş başarılı",
-                    data = new
-                    {
-                        token = result.Data.Token,
-                        expiration = result.Data.Expiration,
-                        userId = userToLogin.Data.Id,
-                        email = userToLogin.Data.Email,
-                        firstName = userToLogin.Data.FirstName,
-                        lastName = userToLogin.Data.LastName,
-                        isAdmin = isAdmin,
-                        claims = claims.Data.Select(c => new { c.Name, c.Id }).ToList()
-                    }
-                };
-                return Ok(response);
-            }
+                    return BadRequest(new { success = false, message = userToLogin.Message });
+                }
 
-            return BadRequest(new { success = false, message = result.Message });
+                var result = _authService.CreateAccessToken(userToLogin.Data);
+                if (result.Success)
+                {
+                    var claims = _userService.GetClaims(userToLogin.Data);
+                    var isAdmin = claims.Data.Any(c => c.Name.ToLower() == "admin");
+
+                    return Ok(new { 
+                        success = true, 
+                        message = "Giriş başarılı",
+                        data = new {
+                            token = result.Data.Token,
+                            expiration = result.Data.Expiration,
+                            userId = userToLogin.Data.Id,
+                            email = userToLogin.Data.Email,
+                            firstName = userToLogin.Data.FirstName,
+                            lastName = userToLogin.Data.LastName,
+                            isAdmin = isAdmin,
+                            profileImagePath = userToLogin.Data.ProfileImagePath,
+                            claims = claims.Data.Select(c => new { c.Name, c.Id }).ToList()
+                        }
+                    });
+                }
+
+                return BadRequest(new { success = false, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Login error: {ex.Message}" });
+            }
         }
 
         [HttpPost("admin/login")]
