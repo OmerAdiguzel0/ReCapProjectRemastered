@@ -7,10 +7,10 @@ using Core.Entities;
 
 namespace Entities.Concrete
 {
-    public class Customer:IEntity
+    public class Customer : IEntity
     {
-        public int CustomerId { get; set; }
-        public int UserId { get; set; }
+        public int CustomerId { get; set; }  // Primary Key
+        public int UserId { get; set; }      // Foreign Key to Users table
         public string CompanyName { get; set; }
     }
 }

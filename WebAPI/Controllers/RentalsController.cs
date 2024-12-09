@@ -2,6 +2,7 @@
 using Entities.Concrete;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
 
 namespace WebAPI.Controllers
 {
@@ -28,15 +29,29 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("add")]
-        public IActionResult Add(Rental rental)
+        public IActionResult Add([FromBody] RentalDto rentalDto)
         {
-            var result = _rentalService.Add(rental);
-            if (result.Success)
+            try
             {
-                return Ok(result);
-            }
+                var rental = new Rental
+                {
+                    CarId = rentalDto.CarId,
+                    CustomerId = rentalDto.UserId,
+                    RentDate = rentalDto.RentDate,
+                    ReturnDate = rentalDto.ReturnDate
+                };
 
-            return BadRequest(result);
+                var result = _rentalService.Add(rental);
+                if (result.Success)
+                {
+                    return Ok(new { success = true, message = result.Message });
+                }
+                return BadRequest(new { success = false, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
         
         [HttpPost("delete")]
@@ -62,5 +77,13 @@ namespace WebAPI.Controllers
 
             return BadRequest(result);
         }
+    }
+
+    public class RentalDto
+    {
+        public int CarId { get; set; }
+        public int UserId { get; set; }
+        public DateTime RentDate { get; set; }
+        public DateTime ReturnDate { get; set; }
     }
 }
