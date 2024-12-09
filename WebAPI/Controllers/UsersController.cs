@@ -195,6 +195,91 @@ namespace WebAPI.Controllers
                 return BadRequest(new { success = false, message = $"Şifre değiştirme işlemi başarısız: {ex.Message}" });
             }
         }
+
+        [HttpPost("profile-image")]
+        [Authorize]
+        public IActionResult UpdateProfileImage(IFormFile file)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                    return BadRequest(new { success = false, message = "Dosya seçilmedi" });
+
+                // Kullanıcı ID'sini token'dan al
+                var userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+
+                // Dosya uzantısını kontrol et
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(extension))
+                    return BadRequest(new { success = false, message = "Sadece .jpg, .jpeg ve .png dosyaları kabul edilir" });
+
+                // Dosya boyutunu kontrol et (örn: max 5MB)
+                if (file.Length > 5 * 1024 * 1024)
+                    return BadRequest(new { success = false, message = "Dosya boyutu 5MB'dan büyük olamaz" });
+
+                // Dosyayı kaydet
+                var fileName = $"profile_{userId}_{DateTime.Now.Ticks}{extension}";
+                var path = Path.Combine("Uploads", "ProfileImages", fileName);
+                var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", path);
+
+                using (var stream = new FileStream(fullPath, FileMode.Create))
+                {
+                    file.CopyTo(stream);
+                }
+
+                // Veritabanını güncelle
+                var result = _userService.UpdateProfileImage(userId, path);
+                if (!result.Success)
+                    return BadRequest(new { success = false, message = result.Message });
+
+                return Ok(new { success = true, message = "Profil fotoğrafı güncellendi", data = path });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Profil fotoğrafı yüklenirken hata oluştu: {ex.Message}" });
+            }
+        }
+
+        [HttpDelete("profile-image")]
+        [Authorize]
+        public IActionResult DeleteProfileImage()
+        {
+            try
+            {
+                var userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+                var result = _userService.DeleteProfileImage(userId);
+                
+                if (!result.Success)
+                    return BadRequest(new { success = false, message = result.Message });
+
+                return Ok(new { success = true, message = "Profil fotoğrafı silindi" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Profil fotoğrafı silinirken hata oluştu: {ex.Message}" });
+            }
+        }
+
+        [HttpGet("profile-image")]
+        [Authorize]
+        public IActionResult GetProfileImage()
+        {
+            try
+            {
+                var userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+                var result = _userService.GetProfileImage(userId);
+                
+                if (!result.Success)
+                    return BadRequest(new { success = false, message = result.Message });
+
+                return Ok(new { success = true, data = result.Data });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Profil fotoğrafı alınırken hata oluştu: {ex.Message}" });
+            }
+        }
     }
 
     public class RoleRequest

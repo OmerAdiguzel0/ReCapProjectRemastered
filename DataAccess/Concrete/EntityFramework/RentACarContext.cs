@@ -112,6 +112,12 @@ namespace DataAccess.Concrete.EntityFramework
                 .UsePropertyAccessMode(PropertyAccessMode.Property);
 
             // DateTime dönüşüm kodunu kaldırdık çünkü Program.cs'de global ayar var
+
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.ToTable("users");
+                entity.Property(e => e.ProfileImagePath).HasColumnName("profile_image_path");
+            });
         }
     }
 }
