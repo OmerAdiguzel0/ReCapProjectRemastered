@@ -197,5 +197,4 @@ Bu proje **MIT lisansı** altında lisanslanmıştır.
 
 ---
 
-Eğer daha fazla bilgiye ihtiyaç duyarsanız veya katkıda bulunmak isterseniz, lütfen iletişime geçin! 😊
 
