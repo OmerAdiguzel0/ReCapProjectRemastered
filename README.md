@@ -47,7 +47,7 @@ Bu proje, araç kiralama sisteminin backend tarafını oluşturan, .NET 6.0 ile 
 - **JWT Bearer Authentication**
 - **AutoMapper**
 - **Serilog**
-- **Microsoft SQL Server**
+- **PostgreSQL**
 
 ---
 
