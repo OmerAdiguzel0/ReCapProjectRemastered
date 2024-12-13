@@ -62,7 +62,7 @@ Bu proje, araç kiralama sisteminin backend tarafını oluşturan, .NET 6.0 ile 
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=RentACarDb;Trusted_Connection=True;"
+           "DefaultConnection": "Host=localhost;Port=5432;Database=RentACarDb;Username=your_username;Password=your_password"
      }
    }
    ```
