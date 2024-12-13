@@ -1,7 +1,7 @@
 # ReCap Project - Backend
 
 ## 🚀 Proje Açıklaması
-Bu proje, araç kiralama sisteminin backend tarafını oluşturan, .NET 6.0 ile geliştirilmiş, kurumsal mimari yapısında bir web API projesidir. Proje, **SOLID prensiplerine** uygun olarak geliştirilmiş ve **çok katmanlı mimari** yapısı kullanılmıştır.
+Bu proje, araç kiralama sisteminin backend tarafını oluşturan, .NET 6.0 ile geliştirilmiş, kurumsal mimari yapısında bir WEB API projesidir. Proje, **SOLID prensiplerine** uygun olarak geliştirilmiş ve **çok katmanlı mimari** yapısı kullanılmıştır.
 
 ---
 
