@@ -6,6 +6,7 @@ using Core.Utilities.Results.Abstract;
 using Core.Utilities.Results.Concrete;
 using Core.Utilities.Security.Hashing;
 using DataAccess.Abstract;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,11 +16,13 @@ namespace Business.Concrete
 {
     public class UserManager : IUserService
     {
-        IUserDal _userDal;
+        private IUserDal _userDal;
+        private readonly ILogger<UserManager> _logger;
 
-        public UserManager(IUserDal userDal)
+        public UserManager(IUserDal userDal, ILogger<UserManager> logger)
         {
             _userDal = userDal;
+            _logger = logger;
         }
 
         public IResult Add(User user)
@@ -379,6 +382,36 @@ namespace Business.Concrete
             catch (Exception ex)
             {
                 return new ErrorDataResult<string>($"Profil fotoğrafı alınırken hata oluştu: {ex.Message}");
+            }
+        }
+
+        public IResult UpdateFindeksScore(int userId, int newScore)
+        {
+            try
+            {
+                var user = _userDal.Get(u => u.Id == userId);
+                if (user == null)
+                {
+                    _logger.LogWarning("User not found: {UserId}", userId);
+                    return new ErrorResult("Kullanıcı bulunamadı");
+                }
+
+                if (newScore < 0 || newScore > 1900)
+                {
+                    _logger.LogWarning("Invalid findeks score: {Score} for user {UserId}", newScore, userId);
+                    return new ErrorResult("Findeks puanı 0-1900 arasında olmalıdır");
+                }
+
+                user.FindeksScore = newScore;
+                _userDal.Update(user);
+
+                _logger.LogInformation("Findeks score updated for user {UserId}: {Score}", userId, newScore);
+                return new SuccessResult("Findeks puanı başarıyla güncellendi");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating findeks score for user {UserId}", userId);
+                return new ErrorResult($"Findeks puanı güncellenirken bir hata oluştu: {ex.Message}");
             }
         }
     }
