@@ -70,6 +70,10 @@ namespace DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("bytea");
 
+                    b.Property<string>("ProfileImagePath")
+                        .HasColumnType("text")
+                        .HasColumnName("profile_image_path");
+
                     b.Property<bool>("Status")
                         .HasColumnType("boolean");
 
@@ -158,21 +162,23 @@ namespace DataAccess.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("CarImageId");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("CarId")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("CarId");
 
                     b.Property<DateTime>("Date")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("Date");
 
                     b.Property<string>("ImagePath")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("ImagePath");
 
                     b.HasKey("Id");
 
@@ -235,10 +241,10 @@ namespace DataAccess.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("RentDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime?>("ReturnDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("RentalId");
 
